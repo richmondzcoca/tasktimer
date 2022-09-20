@@ -27,13 +27,28 @@ function App() {
         const diffMinutes = Math.floor((diffMilliseconds % (1000 * 60 * 60)) / (1000 * 60))
         const diffSeconds = Math.floor((diffMilliseconds % (1000 * 60)) / 1000)
 
-        setHours(TruncateTime(diffHours))
-        setMinutes(TruncateTime(diffMinutes))
-        setSeconds(TruncateTime(diffSeconds));
+        if(diffMilliseconds > 0) {
+          setHours(TruncateTime(diffHours))
+          setMinutes(TruncateTime(diffMinutes))
+          setSeconds(TruncateTime(diffSeconds));
 
-        setTimeout(() => {
-          startButton.current.click()
-        }, 100);
+          setTimeout(() => {
+            startButton.current.click()
+          }, 100);
+        }
+        else {
+          const taskTimerData = {
+            timeData: {
+              hours,
+              minutes,
+              seconds,
+              isPause: false,
+              countDownTime: GetTime(parseInt(hours), parseInt(minutes), parseInt(seconds))
+            }
+          }
+  
+          localStorage.setItem('taskTimerData', JSON.stringify(taskTimerData))
+        }
       }
       else {
         setHours(TruncateTime(parseInt(jsonData.timeData.hours)))
@@ -125,6 +140,8 @@ function App() {
         timeInterval.current = setInterval(() => {
           const now = new Date().getTime()
           const distance = countDownTime - now
+
+          console.log("distance: ", distance)
 
           if(distance < 0) {
             clearInterval(timeInterval.current)
