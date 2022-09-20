@@ -9,10 +9,16 @@ function App() {
     pause: 'PAUSE'
   }
 
-  const [hours, setHours] = useState('00')
+  const buttonColor = {
+    start: 'cyan',
+    pause: 'chocolate'
+  }
+
+  const [hours, setHours] = useState('08')
   const [minutes, setMinutes] = useState('00')
   const [seconds, setSeconds] = useState('00')
   const [countDownButtonText, setCountDownButtonText] = useState(startButtonText.start)
+  const [attrButtonColor, setAttrButtonColor] = useState(buttonColor.start)
 
   const timeInterval: any = useRef()
   const startButton: any = useRef()
@@ -39,11 +45,11 @@ function App() {
         else {
           const taskTimerData = {
             timeData: {
-              hours,
-              minutes,
-              seconds,
+              hours: "00",
+              minutes: "00",
+              seconds: "00",
               isPause: false,
-              countDownTime: GetTime(parseInt(hours), parseInt(minutes), parseInt(seconds))
+              countDownTime: GetTime(0, 0, 0)
             }
           }
   
@@ -136,12 +142,11 @@ function App() {
 
         const countDownTime = GetTime(parseInt(hours), parseInt(minutes), parseInt(seconds))
         setCountDownButtonText(startButtonText.pause)
+        setAttrButtonColor(buttonColor.pause)
 
         timeInterval.current = setInterval(() => {
           const now = new Date().getTime()
           const distance = countDownTime - now
-
-          console.log("distance: ", distance)
 
           if(distance < 0) {
             clearInterval(timeInterval.current)
@@ -169,11 +174,12 @@ function App() {
           }
   
           localStorage.setItem('taskTimerData', JSON.stringify(taskTimerData))
-        }, 1000)
+        }, 500)
         break;
 
       case 'pause':
         setCountDownButtonText(startButtonText.start)
+        setAttrButtonColor(buttonColor.start)
         clearInterval(timeInterval.current)
         timeInterval.current = null
         
@@ -199,7 +205,7 @@ function App() {
     <div className="app">
       <div className="container">
         <div className="timers">
-          <button ref={startButton} onClick={startTimer}>{countDownButtonText}</button>
+          <button ref={startButton} data-color={attrButtonColor} onClick={startTimer}>{countDownButtonText}</button>
           <div className="timer" data-text="hours">
             <input
               onKeyUp={(e) => onKeyUp(e, 'hours')}

@@ -16,14 +16,14 @@
     .timers {
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 2px;
       padding-bottom: 100px;
       
       input[type=text] {
-        height: 50px;
-        width: 60px;
+        height: 40px;
+        width: 50px;
         text-align: center;
-        font-size: 43px;
+        font-size: 33px;
 
         &::-webkit-outer-spin-button, &::-webkit-inner-spin-button {
           -webkit-appearance: none;
@@ -33,7 +33,20 @@
       }
 
       button {
-        font-size: 20px;
+        font-size: 12px;
+        width: 60px;
+        height: 45px;
+        font-weight: bold;
+        margin-right: 4px;
+        cursor: pointer;
+
+        &[data-color=cyan] {
+          background-color: cyan;
+        }
+
+        &[data-color=chocolate] {
+          background-color: chocolate;
+        }
       }
 
       .timer {
@@ -44,8 +57,8 @@
         &::after {
           content: attr(data-text);
           position: absolute;
-          top: 80px;
-          font-size: 12px;
+          top: 68px;
+          font-size: 11px;
           text-transform: uppercase;
         }
       }
