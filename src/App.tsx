@@ -203,6 +203,7 @@ function App() {
 
   return (
     <div className="app">
+      <div className="author">Developed by: Richmond Z. Coca</div>
       <div className="container">
         <div className="timers">
           <button ref={startButton} data-color={attrButtonColor} onClick={startTimer}>{countDownButtonText}</button>
@@ -233,6 +234,16 @@ function App() {
             />
           </div>
         </div>
+        {/* <div className="categories">
+          <select multiple aria-label="multiple select example">
+            <option selected>Open this select menu</option>
+            <option value="1">One</option>
+            <option value="2">Two</option>
+            <option value="3">Three</option><option value="4">Three</option>
+          <option value="5">Three</option>
+          <option value="6">Three</option>
+          </select>
+        </div> */}
       </div>
     </div>
   );

@@ -3,6 +3,16 @@
   height: 100vh;
   display: flex;
   justify-content: center;
+  position: relative;
+
+  .author {
+    position: absolute;
+    color: white;
+    bottom: 10px;
+    right: 10px;
+    font-size: 8px;
+    font-family: monospace;
+  }
 
   .container {
     padding-top: 20px;
@@ -61,6 +71,14 @@
           font-size: 11px;
           text-transform: uppercase;
         }
+      }
+    }
+
+    .categories {
+      width: 52%;
+
+      select {
+        width: 100%;
       }
     }
   }
