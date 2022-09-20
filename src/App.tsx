@@ -1,13 +1,12 @@
 import React, { ChangeEvent, KeyboardEvent, useEffect, useRef, useState } from 'react';
 import './App.scss';
 import { GetTime, TruncateTime } from './helper';
+import { TaskTimer } from './interfaces';
 
 function App() {
   const [hours, setHours] = useState('00')
   const [minutes, setMinutes] = useState('00')
   const [seconds, setSeconds] = useState('00')
-  const [countDownTime, setCountDownTime] = useState(0)
-  const [remainingTime, setRemainingTime] = useState(0)
 
   const timeInterval: any = useRef()
   const startButton: any = useRef()
@@ -17,32 +16,33 @@ function App() {
   }
 
   useEffect(() => {
-    const jsonData = JSON.parse(localStorage.getItem('taskTimerData') as any)
+    const jsonData: TaskTimer = JSON.parse(localStorage.getItem('taskTimerData') as any)
 
     if(jsonData) {
-     
-      // setCountDownTime(jsonData.timeData.countDownTime)
+      if(!jsonData.timeData.isPause) {
+        const diffMilliseconds = (jsonData.timeData.countDownTime - new Date().getTime())
+        const diffHours = Math.floor((diffMilliseconds % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+        const diffMinutes = Math.floor((diffMilliseconds % (1000 * 60 * 60)) / (1000 * 60))
+        const diffSeconds = Math.floor((diffMilliseconds % (1000 * 60)) / 1000)
 
-      // console.log(new Date(jsonData.timeData.countDownTime).toLocaleTimeString())
+        setHours(TruncateTime(diffHours))
+        setMinutes(TruncateTime(diffMinutes))
+        setSeconds(TruncateTime(diffSeconds));
 
-      // const diffMilliseconds = (jsonData.timeData.countDownTime - new Date().getTime())
-      // const diffHours = Math.floor((diffMilliseconds % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-      // const diffMinutes = Math.floor((diffMilliseconds % (1000 * 60 * 60)) / (1000 * 60))
-      // const diffSeconds = Math.floor((diffMilliseconds % (1000 * 60)) / 1000)
-
-      // setHours(TruncateTime(diffHours))
-      // setMinutes(TruncateTime(diffMinutes))
-      // setSeconds(TruncateTime(diffSeconds));
-
-      // setTimeout(() => {
-      //   startButton.current.click()
-      // }, 100);
+        setTimeout(() => {
+          startButton.current.click()
+        }, 100);
+      }
+      else {
+        setHours(TruncateTime(parseInt(jsonData.timeData.hours)))
+        setMinutes(TruncateTime(parseInt(jsonData.timeData.minutes)))
+        setSeconds(TruncateTime(parseInt(jsonData.timeData.seconds)))
+      }
     }
 
-    // return () => {
-    //   console.log('iamhere')
-    //   clearInterval(timeInterval.current)
-    // }
+    return () => {
+      clearInterval(timeInterval.current)
+    }
   }, [])
   
   
@@ -109,26 +109,11 @@ function App() {
   }
 
   const startTimer = (e: any) => {
-    let taskTimerData: {
-      timeData: {
-        hours: string,
-        minutes: string,
-        seconds: string,
-        isPause: boolean
-      }
-    }
+    let taskTimerData: TaskTimer
     
     switch (e.target.textContent.toLowerCase()) {
       case 'start':
-        let startCountDownTime = 0
-
-        if(!countDownTime) {
-          startCountDownTime = GetTime(parseInt(hours), parseInt(minutes), parseInt(seconds))
-        }
-        else {
-          startCountDownTime = countDownTime
-        }
-
+        const countDownTime = GetTime(parseInt(hours), parseInt(minutes), parseInt(seconds))
 
         if(parseInt(hours) === 0 && parseInt(minutes) === 0 && parseInt(seconds) === 0) {
           return
@@ -136,9 +121,7 @@ function App() {
 
         timeInterval.current = setInterval(() => {
           const now = new Date().getTime()
-          const distance = startCountDownTime - now
-
-          setRemainingTime(distance)
+          const distance = countDownTime - now
 
           const intervalHours = TruncateTime(Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)))
           const intervalMinutes = TruncateTime(Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)))
@@ -151,20 +134,22 @@ function App() {
             setHours(intervalHours)
             setMinutes(intervalMinutes)
             setSeconds(intervalSeconds)
+
+            taskTimerData = {
+              timeData: {
+                hours: intervalHours,
+                minutes: intervalMinutes,
+                seconds: intervalSeconds,
+                isPause: false,
+                countDownTime: GetTime(parseInt(intervalHours), parseInt(intervalMinutes), parseInt(intervalSeconds))
+              }
+            }
+    
+            localStorage.setItem('taskTimerData', JSON.stringify(taskTimerData))
           }
         }, 1000)
 
         e.target.innerText = startButtonText.pause
-        taskTimerData = {
-          timeData: {
-            hours,
-            minutes,
-            seconds,
-            isPause: false
-          }
-        }
-
-        localStorage.setItem('taskTimerData', JSON.stringify(taskTimerData))
         break;
 
       case 'pause':
@@ -177,7 +162,8 @@ function App() {
             hours,
             minutes,
             seconds,
-            isPause: true
+            isPause: true,
+            countDownTime: GetTime(parseInt(hours), parseInt(minutes), parseInt(seconds))
           }
         }
 
@@ -189,28 +175,11 @@ function App() {
     }
   }
 
-  const pauseTimer = () => {
-    console.log(timeInterval)
-    clearInterval(timeInterval.current)
-    timeInterval.current = null
-
-    // const taskTimerData = {
-    //   timeData: {
-    //     countDownTime: new Date(new Date().getTime() + remainingTime).getTime()
-    //   }
-    // }
-
-    // setCountDownTime(taskTimerData.timeData.countDownTime)
-
-    // localStorage.setItem('taskTimerData', JSON.stringify(taskTimerData))
-  }
-
   return (
     <div className="app">
       <div className="container">
         <div className="timers">
           <button ref={startButton} onClick={startTimer}>START</button>
-          {/* <button onClick={pauseTimer}>PAUSE</button> */}
           <div className="timer" data-text="hours">
             <input
               onKeyUp={(e) => onKeyUp(e, 'hours')}
