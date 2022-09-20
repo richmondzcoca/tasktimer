@@ -21,28 +21,29 @@ function App() {
 
     if(jsonData) {
      
-      setCountDownTime(jsonData.timeData.countDownTime)
+      // setCountDownTime(jsonData.timeData.countDownTime)
 
-      console.log(new Date(jsonData.timeData.countDownTime).toLocaleTimeString())
+      // console.log(new Date(jsonData.timeData.countDownTime).toLocaleTimeString())
 
-      const diffMilliseconds = (jsonData.timeData.countDownTime - new Date().getTime())
-      const diffHours = Math.floor((diffMilliseconds % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-      const diffMinutes = Math.floor((diffMilliseconds % (1000 * 60 * 60)) / (1000 * 60))
-      const diffSeconds = Math.floor((diffMilliseconds % (1000 * 60)) / 1000)
+      // const diffMilliseconds = (jsonData.timeData.countDownTime - new Date().getTime())
+      // const diffHours = Math.floor((diffMilliseconds % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+      // const diffMinutes = Math.floor((diffMilliseconds % (1000 * 60 * 60)) / (1000 * 60))
+      // const diffSeconds = Math.floor((diffMilliseconds % (1000 * 60)) / 1000)
 
-      setHours(TruncateTime(diffHours))
-      setMinutes(TruncateTime(diffMinutes))
-      setSeconds(TruncateTime(diffSeconds));
+      // setHours(TruncateTime(diffHours))
+      // setMinutes(TruncateTime(diffMinutes))
+      // setSeconds(TruncateTime(diffSeconds));
 
-      setTimeout(() => {
-        startButton.current.click()
-      }, 100);
+      // setTimeout(() => {
+      //   startButton.current.click()
+      // }, 100);
     }
-  }, [])
 
-  useEffect(() => {
-    console.log("countDownTime: ", countDownTime)
-  }, [countDownTime])
+    // return () => {
+    //   console.log('iamhere')
+    //   clearInterval(timeInterval.current)
+    // }
+  }, [])
   
   
 
@@ -108,6 +109,15 @@ function App() {
   }
 
   const startTimer = (e: any) => {
+    let taskTimerData: {
+      timeData: {
+        hours: string,
+        minutes: string,
+        seconds: string,
+        isPause: boolean
+      }
+    }
+    
     switch (e.target.textContent.toLowerCase()) {
       case 'start':
         let startCountDownTime = 0
@@ -145,20 +155,31 @@ function App() {
         }, 1000)
 
         e.target.innerText = startButtonText.pause
+        taskTimerData = {
+          timeData: {
+            hours,
+            minutes,
+            seconds,
+            isPause: false
+          }
+        }
+
+        localStorage.setItem('taskTimerData', JSON.stringify(taskTimerData))
         break;
 
       case 'pause':
         clearInterval(timeInterval.current)
+        timeInterval.current = null
         e.target.innerText = startButtonText.start
-        console.log("remainingTime: ", remainingTime)
         
-        const taskTimerData = {
+        taskTimerData = {
           timeData: {
-            countDownTime: new Date(new Date().getTime() + remainingTime).getTime()
+            hours,
+            minutes,
+            seconds,
+            isPause: true
           }
         }
-
-        setCountDownTime(taskTimerData.timeData.countDownTime)
 
         localStorage.setItem('taskTimerData', JSON.stringify(taskTimerData))
         break;
@@ -168,11 +189,28 @@ function App() {
     }
   }
 
+  const pauseTimer = () => {
+    console.log(timeInterval)
+    clearInterval(timeInterval.current)
+    timeInterval.current = null
+
+    // const taskTimerData = {
+    //   timeData: {
+    //     countDownTime: new Date(new Date().getTime() + remainingTime).getTime()
+    //   }
+    // }
+
+    // setCountDownTime(taskTimerData.timeData.countDownTime)
+
+    // localStorage.setItem('taskTimerData', JSON.stringify(taskTimerData))
+  }
+
   return (
     <div className="app">
       <div className="container">
         <div className="timers">
           <button ref={startButton} onClick={startTimer}>START</button>
+          {/* <button onClick={pauseTimer}>PAUSE</button> */}
           <div className="timer" data-text="hours">
             <input
               onKeyUp={(e) => onKeyUp(e, 'hours')}
