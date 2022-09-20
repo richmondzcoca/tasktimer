@@ -4,16 +4,18 @@ import { GetTime, TruncateTime } from './helper';
 import { TaskTimer } from './interfaces';
 
 function App() {
-  const [hours, setHours] = useState('00')
-  const [minutes, setMinutes] = useState('00')
-  const [seconds, setSeconds] = useState('00')
-
-  const timeInterval: any = useRef()
-  const startButton: any = useRef()
   const startButtonText = {
     start: 'START',
     pause: 'PAUSE'
   }
+
+  const [hours, setHours] = useState('00')
+  const [minutes, setMinutes] = useState('00')
+  const [seconds, setSeconds] = useState('00')
+  const [countDownButtonText, setCountDownButtonText] = useState(startButtonText.start)
+
+  const timeInterval: any = useRef()
+  const startButton: any = useRef()
 
   useEffect(() => {
     const jsonData: TaskTimer = JSON.parse(localStorage.getItem('taskTimerData') as any)
@@ -113,27 +115,26 @@ function App() {
     
     switch (e.target.textContent.toLowerCase()) {
       case 'start':
-        const countDownTime = GetTime(parseInt(hours), parseInt(minutes), parseInt(seconds))
-
         if(parseInt(hours) === 0 && parseInt(minutes) === 0 && parseInt(seconds) === 0) {
           return
         }
+
+        const countDownTime = GetTime(parseInt(hours), parseInt(minutes), parseInt(seconds))
+        setCountDownButtonText(startButtonText.pause)
 
         timeInterval.current = setInterval(() => {
           const now = new Date().getTime()
           const distance = countDownTime - now
 
-          const intervalHours = TruncateTime(Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)))
-          const intervalMinutes = TruncateTime(Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)))
-          const intervalSeconds = TruncateTime(Math.floor((distance % (1000 * 60)) / 1000))
-
           if(distance < 0) {
             clearInterval(timeInterval.current)
+            taskTimerData.timeData.isPause = true
+            setCountDownButtonText(startButtonText.start)
           }
           else {
-            setHours(intervalHours)
-            setMinutes(intervalMinutes)
-            setSeconds(intervalSeconds)
+            const intervalHours = TruncateTime(Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)))
+            const intervalMinutes = TruncateTime(Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)))
+            const intervalSeconds = TruncateTime(Math.floor((distance % (1000 * 60)) / 1000))
 
             taskTimerData = {
               timeData: {
@@ -144,18 +145,20 @@ function App() {
                 countDownTime: GetTime(parseInt(intervalHours), parseInt(intervalMinutes), parseInt(intervalSeconds))
               }
             }
-    
-            localStorage.setItem('taskTimerData', JSON.stringify(taskTimerData))
-          }
-        }, 1000)
 
-        e.target.innerText = startButtonText.pause
+            setHours(intervalHours)
+            setMinutes(intervalMinutes)
+            setSeconds(intervalSeconds)
+          }
+  
+          localStorage.setItem('taskTimerData', JSON.stringify(taskTimerData))
+        }, 1000)
         break;
 
       case 'pause':
+        setCountDownButtonText(startButtonText.start)
         clearInterval(timeInterval.current)
         timeInterval.current = null
-        e.target.innerText = startButtonText.start
         
         taskTimerData = {
           timeData: {
@@ -179,7 +182,7 @@ function App() {
     <div className="app">
       <div className="container">
         <div className="timers">
-          <button ref={startButton} onClick={startTimer}>START</button>
+          <button ref={startButton} onClick={startTimer}>{countDownButtonText}</button>
           <div className="timer" data-text="hours">
             <input
               onKeyUp={(e) => onKeyUp(e, 'hours')}
