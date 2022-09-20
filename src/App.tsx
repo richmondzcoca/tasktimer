@@ -14,11 +14,33 @@ function App() {
     pause: 'chocolate'
   }
 
+  const categoriesText = {
+    show: 'SHOW CATEGORIES',
+    hide: 'HIDE CATEGORIES'
+  }
+
   const [hours, setHours] = useState('08')
   const [minutes, setMinutes] = useState('00')
   const [seconds, setSeconds] = useState('00')
   const [countDownButtonText, setCountDownButtonText] = useState(startButtonText.start)
   const [attrButtonColor, setAttrButtonColor] = useState(buttonColor.start)
+  const [showCategories, setShowCategories] = useState(Boolean)
+  const [stateCategoriesText, setStateCategoriesText] = useState(categoriesText.show)
+  const [categoriesOptions, setCategoriesOptions] = useState([
+    {
+      name: 'One',
+      isSelected: false
+    },
+    {
+      name: 'Two',
+      isSelected: true
+    },
+    {
+      name: 'Three',
+      isSelected: false
+    }
+  ])
+  const [categoriesSelected, setCategoriesSelected] = useState('')
 
   const timeInterval: any = useRef()
   const startButton: any = useRef()
@@ -66,9 +88,7 @@ function App() {
     return () => {
       clearInterval(timeInterval.current)
     }
-  }, [])
-  
-  
+  }, [])  
 
   const onKeyUp = (e: KeyboardEvent, type: string) => {
     if(e.key === 'Backspace') {
@@ -201,6 +221,15 @@ function App() {
     }
   }
 
+  const handleShowCategories = () => {
+    setShowCategories(!showCategories)
+    setStateCategoriesText(showCategories ? categoriesText.show : categoriesText.hide)
+  }
+
+  const handleOnChangeCategories = (e: ChangeEvent<HTMLSelectElement>) => {
+    setCategoriesSelected(e.target.value)
+  }
+
   return (
     <div className="app">
       <div className="author">Developed by: Richmond Z. Coca</div>
@@ -234,16 +263,23 @@ function App() {
             />
           </div>
         </div>
-        {/* <div className="categories">
-          <select multiple aria-label="multiple select example">
-            <option selected>Open this select menu</option>
-            <option value="1">One</option>
-            <option value="2">Two</option>
-            <option value="3">Three</option><option value="4">Three</option>
-          <option value="5">Three</option>
-          <option value="6">Three</option>
-          </select>
-        </div> */}
+        <button className="show-categories" onClick={handleShowCategories}>{stateCategoriesText}</button>
+        {
+          showCategories &&
+          <div className="categories">
+            <div className="add-categories">
+              <button>ADD</button>
+              <input placeholder="Add categories" type="text" />
+            </div>
+            <select value={categoriesSelected} onChange={handleOnChangeCategories} aria-label="multiple select">
+              {
+                categoriesOptions.map( (optionData, index) =>
+                  <option key={index} value={optionData.name}>{optionData.name}</option>
+                )
+              }
+            </select>
+          </div>
+        }
       </div>
     </div>
   );
