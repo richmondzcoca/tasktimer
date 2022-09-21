@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
 
-  "name": "My Extension",
-  "description": "This extension is a starting point to create a real Chrome extension",
+  "name": "Task Timer",
+  "description": "Task timer for Code and Theory task",
   "version": "0.0.1",
 
   "action": {
