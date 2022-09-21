@@ -1,4 +1,4 @@
-import React, { ChangeEvent, KeyboardEvent, useEffect, useRef, useState } from 'react';
+import React, { ChangeEvent, FormEvent, KeyboardEvent, useEffect, useRef, useState } from 'react';
 import './App.scss';
 import { GetTime, TruncateTime } from './helper';
 import { TaskTimer } from './interfaces';
@@ -42,8 +42,9 @@ function App() {
   ])
   const [categoriesSelected, setCategoriesSelected] = useState('')
 
-  const timeInterval: any = useRef()
-  const startButton: any = useRef()
+  const refTimeInterval = useRef<NodeJS.Timer>()
+  const refStartButton = useRef<HTMLButtonElement>(null)
+  const refCategoriesInput = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const jsonData: TaskTimer = JSON.parse(localStorage.getItem('taskTimerData') as any)
@@ -61,7 +62,7 @@ function App() {
           setSeconds(TruncateTime(diffSeconds));
 
           setTimeout(() => {
-            startButton.current.click()
+            refStartButton.current?.click()
           }, 100);
         }
         else {
@@ -86,7 +87,7 @@ function App() {
     }
 
     return () => {
-      clearInterval(timeInterval.current)
+      clearInterval(refTimeInterval.current)
     }
   }, [])  
 
@@ -164,12 +165,12 @@ function App() {
         setCountDownButtonText(startButtonText.pause)
         setAttrButtonColor(buttonColor.pause)
 
-        timeInterval.current = setInterval(() => {
+        refTimeInterval.current = setInterval(() => {
           const now = new Date().getTime()
           const distance = countDownTime - now
 
           if(distance < 0) {
-            clearInterval(timeInterval.current)
+            clearInterval(refTimeInterval.current)
             taskTimerData.timeData.isPause = true
             setCountDownButtonText(startButtonText.start)
           }
@@ -200,8 +201,7 @@ function App() {
       case 'pause':
         setCountDownButtonText(startButtonText.start)
         setAttrButtonColor(buttonColor.start)
-        clearInterval(timeInterval.current)
-        timeInterval.current = null
+        clearInterval(refTimeInterval.current)
         
         taskTimerData = {
           timeData: {
@@ -230,12 +230,25 @@ function App() {
     setCategoriesSelected(e.target.value)
   }
 
+  const onSubmitCategories = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+
+    if(refCategoriesInput.current?.value!) {
+      setCategoriesOptions([{
+        name: refCategoriesInput.current?.value!,
+        isSelected: false
+      }, ...categoriesOptions])
+      setCategoriesSelected(refCategoriesInput.current?.value!)
+      refCategoriesInput.current.value = ''
+    }
+  }
+
   return (
     <div className="app">
       <div className="author">Developed by: Richmond Z. Coca</div>
       <div className="container">
         <div className="timers">
-          <button ref={startButton} data-color={attrButtonColor} onClick={startTimer}>{countDownButtonText}</button>
+          <button ref={refStartButton} data-color={attrButtonColor} onClick={startTimer}>{countDownButtonText}</button>
           <div className="timer" data-text="hours">
             <input
               onKeyUp={(e) => onKeyUp(e, 'hours')}
@@ -267,10 +280,10 @@ function App() {
         {
           showCategories &&
           <div className="categories">
-            <div className="add-categories">
+            <form className="add-categories" onSubmit={onSubmitCategories}>
               <button>ADD</button>
-              <input placeholder="Add categories" type="text" />
-            </div>
+              <input ref={refCategoriesInput} placeholder="Add categories" type="text" />
+            </form>
             <select value={categoriesSelected} onChange={handleOnChangeCategories} aria-label="multiple select">
               {
                 categoriesOptions.map( (optionData, index) =>
