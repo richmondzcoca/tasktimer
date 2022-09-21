@@ -22,6 +22,7 @@ function App() {
   const [hours, setHours] = useState('08')
   const [minutes, setMinutes] = useState('00')
   const [seconds, setSeconds] = useState('00')
+  const [milliseconds, setMilliseconds] = useState(0)
   const [countDownButtonText, setCountDownButtonText] = useState(startButtonText.start)
   const [attrButtonColor, setAttrButtonColor] = useState(buttonColor.start)
   const [showCategories, setShowCategories] = useState(Boolean)
@@ -51,15 +52,17 @@ function App() {
 
     if(jsonData) {
       if(!jsonData.timeData.isPause) {
-        const diffMilliseconds = (jsonData.timeData.countDownTime - new Date().getTime())
-        const diffHours = Math.floor((diffMilliseconds % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-        const diffMinutes = Math.floor((diffMilliseconds % (1000 * 60 * 60)) / (1000 * 60))
-        const diffSeconds = Math.floor((diffMilliseconds % (1000 * 60)) / 1000)
+        const diff = (jsonData.timeData.countDownTime - new Date().getTime())
+        const diffHours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+        const diffMinutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+        const diffSeconds = Math.floor((diff % (1000 * 60)) / 1000)
+        const diffMilliseconds = Math.floor((diff % 1000))
 
-        if(diffMilliseconds > 0) {
+        if(diff > 0) {
           setHours(TruncateTime(diffHours))
           setMinutes(TruncateTime(diffMinutes))
-          setSeconds(TruncateTime(diffSeconds));
+          setSeconds(TruncateTime(diffSeconds))
+          setMilliseconds(diffMilliseconds)
 
           setTimeout(() => {
             refStartButton.current?.click()
@@ -161,7 +164,7 @@ function App() {
           return
         }
 
-        const countDownTime = GetTime(parseInt(hours), parseInt(minutes), parseInt(seconds))
+        const countDownTime = GetTime(parseInt(hours), parseInt(minutes), parseInt(seconds), milliseconds)
         setCountDownButtonText(startButtonText.pause)
         setAttrButtonColor(buttonColor.pause)
 
@@ -178,6 +181,7 @@ function App() {
             const intervalHours = TruncateTime(Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)))
             const intervalMinutes = TruncateTime(Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)))
             const intervalSeconds = TruncateTime(Math.floor((distance % (1000 * 60)) / 1000))
+            const intervalMilliseconds = Math.floor(distance % 1000)
 
             taskTimerData = {
               timeData: {
@@ -185,7 +189,7 @@ function App() {
                 minutes: intervalMinutes,
                 seconds: intervalSeconds,
                 isPause: false,
-                countDownTime: GetTime(parseInt(intervalHours), parseInt(intervalMinutes), parseInt(intervalSeconds))
+                countDownTime: GetTime(parseInt(intervalHours), parseInt(intervalMinutes), parseInt(intervalSeconds), intervalMilliseconds)
               }
             }
 
