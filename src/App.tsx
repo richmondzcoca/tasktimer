@@ -283,7 +283,7 @@ function App() {
             />
           </div>
         </div>
-        <button className="show-categories" onClick={handleShowCategories}>{stateCategoriesText}</button>
+        {/* <button className="show-categories" onClick={handleShowCategories}>{stateCategoriesText}</button> */}
         {
           showCategories &&
           <div className="categories">
