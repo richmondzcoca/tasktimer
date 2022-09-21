@@ -1,9 +1,12 @@
 export interface TaskTimer {
-    timeData: {
-        hours: string,
-        minutes: string,
-        seconds: string,
-        isPause: boolean,
-        countDownTime: number
-    }
+    hours: string,
+    minutes: string,
+    seconds: string,
+    isPause: boolean,
+    countDownTime: number
+}
+
+export interface TaskCategories {
+    name: string,
+    isSelected: boolean
 }

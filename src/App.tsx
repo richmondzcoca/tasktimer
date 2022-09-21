@@ -1,7 +1,7 @@
 import React, { ChangeEvent, FormEvent, KeyboardEvent, useEffect, useRef, useState } from 'react';
 import './App.scss';
-import { GetTime, TruncateTime } from './helper';
-import { TaskTimer } from './interfaces';
+import { addTaskCategories, getTaskCategories, GetTime, TruncateTime } from './helper';
+import { TaskCategories, TaskTimer } from './interfaces';
 
 function App() {
   const startButtonText = {
@@ -27,32 +27,20 @@ function App() {
   const [attrButtonColor, setAttrButtonColor] = useState(buttonColor.start)
   const [showCategories, setShowCategories] = useState(Boolean)
   const [stateCategoriesText, setStateCategoriesText] = useState(categoriesText.show)
-  const [categoriesOptions, setCategoriesOptions] = useState([
-    {
-      name: 'One',
-      isSelected: false
-    },
-    {
-      name: 'Two',
-      isSelected: true
-    },
-    {
-      name: 'Three',
-      isSelected: false
-    }
-  ])
+  const [categoriesOptions, setCategoriesOptions] = useState<TaskCategories[]>([])
   const [categoriesSelected, setCategoriesSelected] = useState('')
 
   const refTimeInterval: any = useRef()
   const refStartButton = useRef<HTMLButtonElement>(null)
   const refCategoriesInput = useRef<HTMLInputElement>(null)
+  const refSelectCategories = useRef<HTMLSelectElement>(null)
 
   useEffect(() => {
     const jsonData: TaskTimer = JSON.parse(localStorage.getItem('taskTimerData') as any)
 
     if(jsonData) {
-      if(!jsonData.timeData.isPause) {
-        const diff = (jsonData.timeData.countDownTime - new Date().getTime())
+      if(!jsonData.isPause) {
+        const diff = (jsonData.countDownTime - new Date().getTime())
         const diffHours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
         const diffMinutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
         const diffSeconds = Math.floor((diff % (1000 * 60)) / 1000)
@@ -70,29 +58,36 @@ function App() {
         }
         else {
           const taskTimerData = {
-            timeData: {
-              hours: "00",
-              minutes: "00",
-              seconds: "00",
-              isPause: false,
-              countDownTime: GetTime(0, 0, 0)
-            }
+            hours: "00",
+            minutes: "00",
+            seconds: "00",
+            isPause: false,
+            countDownTime: GetTime(0, 0, 0)
           }
   
           localStorage.setItem('taskTimerData', JSON.stringify(taskTimerData))
         }
       }
       else {
-        setHours(TruncateTime(parseInt(jsonData.timeData.hours)))
-        setMinutes(TruncateTime(parseInt(jsonData.timeData.minutes)))
-        setSeconds(TruncateTime(parseInt(jsonData.timeData.seconds)))
+        setHours(TruncateTime(parseInt(jsonData.hours)))
+        setMinutes(TruncateTime(parseInt(jsonData.minutes)))
+        setSeconds(TruncateTime(parseInt(jsonData.seconds)))
       }
     }
+
+    setCategoriesOptions(getTaskCategories())
 
     return () => {
       cancelAnimationFrame(refTimeInterval.current)
     }
   }, [])
+
+  useEffect(() => {
+    if(categoriesOptions.length) {
+      setCategoriesSelected(categoriesOptions.filter(option => option.isSelected === true)[0]?.name)
+    }
+    addTaskCategories(categoriesOptions)
+  }, [categoriesOptions])
 
   const onKeyUp = (e: KeyboardEvent, type: string) => {
     if(e.key === 'Backspace') {
@@ -174,7 +169,7 @@ function App() {
 
           if(distance < 0) {
             cancelAnimationFrame(refTimeInterval.current)
-            taskTimerData.timeData.isPause = true
+            taskTimerData.isPause = true
             setCountDownButtonText(startButtonText.start)
           }
           else {
@@ -184,13 +179,11 @@ function App() {
             const intervalMilliseconds = Math.floor(distance % 1000)
 
             taskTimerData = {
-              timeData: {
-                hours: intervalHours,
-                minutes: intervalMinutes,
-                seconds: intervalSeconds,
-                isPause: false,
-                countDownTime: GetTime(parseInt(intervalHours), parseInt(intervalMinutes), parseInt(intervalSeconds), intervalMilliseconds)
-              }
+              hours: intervalHours,
+              minutes: intervalMinutes,
+              seconds: intervalSeconds,
+              isPause: false,
+              countDownTime: GetTime(parseInt(intervalHours), parseInt(intervalMinutes), parseInt(intervalSeconds), intervalMilliseconds)
             }
 
             setHours(intervalHours)
@@ -211,13 +204,11 @@ function App() {
         cancelAnimationFrame(refTimeInterval.current)
         
         taskTimerData = {
-          timeData: {
-            hours,
-            minutes,
-            seconds,
-            isPause: true,
-            countDownTime: GetTime(parseInt(hours), parseInt(minutes), parseInt(seconds))
-          }
+          hours,
+          minutes,
+          seconds,
+          isPause: true,
+          countDownTime: GetTime(parseInt(hours), parseInt(minutes), parseInt(seconds), milliseconds)
         }
 
         localStorage.setItem('taskTimerData', JSON.stringify(taskTimerData))
@@ -235,6 +226,7 @@ function App() {
 
   const handleOnChangeCategories = (e: ChangeEvent<HTMLSelectElement>) => {
     setCategoriesSelected(e.target.value)
+    setCategoriesOptions(categoriesOptions.map(option => option.name === e.target.value ? {...option, isSelected: true} : {...option, isSelected: false}))
   }
 
   const onSubmitCategories = (e: FormEvent<HTMLFormElement>) => {
@@ -248,6 +240,14 @@ function App() {
       setCategoriesSelected(refCategoriesInput.current?.value!)
       refCategoriesInput.current.value = ''
     }
+  }
+
+  const handleRemoveCategories = () => {
+    if(categoriesSelected === '' || categoriesSelected === undefined) {
+      return setCategoriesOptions(categoriesOptions.filter(option => option.name !== refSelectCategories.current?.value))
+    }
+
+    setCategoriesOptions(categoriesOptions.filter(option => option.name !== categoriesSelected))
   }
 
   return (
@@ -291,13 +291,19 @@ function App() {
               <button>ADD</button>
               <input ref={refCategoriesInput} placeholder="Add categories" type="text" />
             </form>
-            <select value={categoriesSelected} onChange={handleOnChangeCategories} aria-label="multiple select">
-              {
-                categoriesOptions.map( (optionData, index) =>
-                  <option key={index} value={optionData.name}>{optionData.name}</option>
-                )
-              }
-            </select>
+            {
+              categoriesOptions.length !== 0 &&
+              <div className="select-container">
+                <button onClick={handleRemoveCategories}>REMOVE</button>
+                <select ref={refSelectCategories} value={categoriesSelected} onChange={handleOnChangeCategories}>
+                  {
+                    categoriesOptions.map( (optionData, index) =>
+                      <option key={index} value={optionData.name}>{optionData.name}</option>
+                    )
+                  }
+                </select>
+              </div>
+            }
           </div>
         }
       </div>

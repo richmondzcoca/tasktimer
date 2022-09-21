@@ -101,6 +101,11 @@
           flex-grow: 1;
         }
       }
+
+      .select-container {
+        display: flex;
+        margin-top: 5px;
+      }
     }
 
     .show-categories {
