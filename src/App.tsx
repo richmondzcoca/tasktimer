@@ -42,7 +42,7 @@ function App() {
   ])
   const [categoriesSelected, setCategoriesSelected] = useState('')
 
-  const refTimeInterval = useRef<NodeJS.Timer>()
+  const refTimeInterval: any = useRef()
   const refStartButton = useRef<HTMLButtonElement>(null)
   const refCategoriesInput = useRef<HTMLInputElement>(null)
 
@@ -87,9 +87,9 @@ function App() {
     }
 
     return () => {
-      clearInterval(refTimeInterval.current)
+      cancelAnimationFrame(refTimeInterval.current)
     }
-  }, [])  
+  }, [])
 
   const onKeyUp = (e: KeyboardEvent, type: string) => {
     if(e.key === 'Backspace') {
@@ -165,12 +165,12 @@ function App() {
         setCountDownButtonText(startButtonText.pause)
         setAttrButtonColor(buttonColor.pause)
 
-        refTimeInterval.current = setInterval(() => {
+        const animate = () => {
           const now = new Date().getTime()
           const distance = countDownTime - now
 
           if(distance < 0) {
-            clearInterval(refTimeInterval.current)
+            cancelAnimationFrame(refTimeInterval.current)
             taskTimerData.timeData.isPause = true
             setCountDownButtonText(startButtonText.start)
           }
@@ -195,13 +195,16 @@ function App() {
           }
   
           localStorage.setItem('taskTimerData', JSON.stringify(taskTimerData))
-        }, 500)
+          refTimeInterval.current = requestAnimationFrame(animate)
+        }
+
+        refTimeInterval.current = requestAnimationFrame(animate)
         break;
 
       case 'pause':
         setCountDownButtonText(startButtonText.start)
         setAttrButtonColor(buttonColor.start)
-        clearInterval(refTimeInterval.current)
+        cancelAnimationFrame(refTimeInterval.current)
         
         taskTimerData = {
           timeData: {
