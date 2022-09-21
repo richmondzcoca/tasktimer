@@ -22,7 +22,7 @@ export const addTaskTimerData = (data: TaskTimer) => {
 }
 
 export const getTaskCategories = () => {
-    const jsonData: TaskCategories[] = JSON.parse(localStorage.getItem('taskTimerCategories') || '{}')
+    const jsonData: TaskCategories[] = JSON.parse(localStorage.getItem('taskTimerCategories') || '[]')
     return jsonData
 }
 
