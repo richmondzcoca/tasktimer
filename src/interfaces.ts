@@ -14,8 +14,14 @@ export interface TaskCategories {
 export interface TaskListInterface {
     name: string,
     taskCategory: string,
-    isPause: boolean,
+    isPlay: boolean,
     hours: string,
     minutes: string,
-    seconds: string
+    seconds: string,
+    elapsedTime: number
+}
+
+export interface StartStopWatchInterface {
+    isPlay: boolean,
+    taskIndex: number
 }
