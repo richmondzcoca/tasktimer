@@ -1,7 +1,7 @@
 import React, { ChangeEvent, FormEvent, KeyboardEvent, useEffect, useRef, useState } from 'react';
 import './App.scss';
 import { addTaskCategories, getTaskCategories, GetTime, TruncateTime } from './helper';
-import { TaskCategories, TaskTimer } from './interfaces';
+import { TaskCategories, TaskListInterface, TaskTimer } from './interfaces';
 
 function App() {
   const startButtonText = {
@@ -29,6 +29,33 @@ function App() {
   const [stateCategoriesText, setStateCategoriesText] = useState(categoriesText.show)
   const [categoriesOptions, setCategoriesOptions] = useState<TaskCategories[]>([])
   const [categoriesSelected, setCategoriesSelected] = useState('')
+  const [taskList, setTaskList] = useState<TaskListInterface[]>([
+    {
+      name: 'Task One',
+      taskCategory: 'Task Category 1',
+      isPause: false,
+      hours: '01',
+      minutes: '50',
+      seconds: '30'
+    },
+    {
+      name: 'Task Two',
+      taskCategory: 'Task Category 2',
+      isPause: false,
+      hours: '01',
+      minutes: '50',
+      seconds: '30'
+    },
+    {
+      name: 'Task Three',
+      taskCategory: 'Task Category 3',
+      isPause: false,
+      hours: '01',
+      minutes: '50',
+      seconds: '30'
+    }
+  ])
+  const [taskName, setTaskName] = useState('')
 
   const refTimeInterval: any = useRef()
   const refStartButton = useRef<HTMLButtonElement>(null)
@@ -233,9 +260,10 @@ function App() {
     e.preventDefault()
 
     if(refCategoriesInput.current?.value!) {
+      setCategoriesOptions(categoriesOptions.map(each => ({...each, isSelected: false})))
       setCategoriesOptions([{
         name: refCategoriesInput.current?.value!,
-        isSelected: false
+        isSelected: true
       }, ...categoriesOptions])
       setCategoriesSelected(refCategoriesInput.current?.value!)
       refCategoriesInput.current.value = ''
@@ -248,6 +276,36 @@ function App() {
     }
 
     setCategoriesOptions(categoriesOptions.filter(option => option.name !== categoriesSelected))
+  }
+
+  const handleTaskListChange = (e: any, index: number, type: string) => {
+    setTaskList(taskList.map((task, i) => i === index ? {...task, [type]: e.target.value} : task))
+  }
+
+  const handleAddTaskCategoryChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    setCategoriesSelected(e.target.value)
+    setCategoriesOptions(categoriesOptions.map(each => each.name === e.target.value ? {...each, isSelected: true} : {...each, isSelected: false}))
+  }
+
+  const handleAddTaskSubmit = (e: FormEvent) => {
+    e.preventDefault()
+    setTaskList([{
+      name: taskName,
+      taskCategory: categoriesSelected,
+      isPause: false,
+      hours: '00',
+      minutes: '00',
+      seconds: '00'
+    }, ...taskList])
+    setTaskName('')
+  }
+
+  const handleTaskNameChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setTaskName(e.target.value)
+  }
+
+  const handleTaskListDelete = (index: number) => {
+    setTaskList(taskList.filter((task, i) => i !== index))
   }
 
   return (
@@ -303,6 +361,57 @@ function App() {
                   }
                 </select>
               </div>
+            }
+          </div>
+        }
+        <form className="add-task" onSubmit={handleAddTaskSubmit}>
+          <button>ADD</button>
+          <input value={taskName} onChange={handleTaskNameChange} type="text" placeholder="Enter a new task name..." />
+          {
+            categoriesOptions.length > 0 &&
+            <select value={categoriesSelected} onChange={handleAddTaskCategoryChange}>
+              {
+                categoriesOptions.map((each, index) =>
+                  <option key={index} value={each.name}>{each.name}</option>
+                )
+              }
+            </select>
+          }
+        </form>
+        {
+          taskList.length > 0 &&
+          <div className="task-lists">
+            {
+              taskList.length > 0 &&
+              taskList.map((task, index) =>
+                <div className="task-list" key={index}>
+                  <div className="task-lists-button">
+                    <button>PLAY</button>
+                    <button>RESET</button>
+                  </div>
+                  <input value={task.name} onChange={e => handleTaskListChange(e, index, 'name')} className="task-name" type="text" />
+                  {
+                    categoriesOptions.length > 0 &&
+                    <select value={task.taskCategory} onChange={e => handleTaskListChange(e, index, 'taskCategory')} name="" id="">
+                      {
+                        categoriesOptions.map((each, index) =>
+                          <option key={index} value={each.name}>{each.name}</option>
+                        )
+                      }
+                    </select>
+                  }
+                  <div className="task-lists-timer">
+                    <input onChange={e => handleTaskListChange(e, index, 'hours')} value={task.hours} type="text" maxLength={2} />
+                    :
+                    <input onChange={e => handleTaskListChange(e, index, 'minutes')} value={task.minutes} type="text" maxLength={2} />
+                    :
+                    <input onChange={e => handleTaskListChange(e, index, 'seconds')} value={task.seconds} type="text" maxLength={2} />
+                  </div>
+                  <div className='delete-container'>
+                    <button onClick={() => handleTaskListDelete(index)} className='delete'>DELETE</button>
+                  </div>
+                </div>
+              )
             }
           </div>
         }

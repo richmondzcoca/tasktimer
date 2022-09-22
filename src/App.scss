@@ -21,7 +21,7 @@
 
   .container {
     padding-top: 20px;
-    width: 500px;
+    width: 700px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -113,6 +113,89 @@
       margin-bottom: 10px;
       font-weight: bold;
       font-size: 10px;
+    }
+
+    .task-lists {
+      display: flex;
+      margin-top: 10px;
+      width: 90%;
+      padding: 10px;
+      border: 1px solid white;
+      flex-direction: column;
+      gap: 10px;
+
+      .task-list {
+        display: flex;
+        width: 100%;
+        background-color: white;
+
+        select {
+          width: 100px;
+          border: none;
+        }
+
+        .delete {
+          margin-left: 10px;
+          font-size: 9px;
+
+          &-container {
+            background-color: #282c34;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          }
+        }
+      }
+
+      .task-name {
+        width: 100%;
+        border: none;
+        outline: none;
+        padding: 5px 10px;
+      }
+
+      &-timer {
+        display: flex;
+        align-items: center;
+        color: black;
+        font-size: 12px;
+
+        span {
+          color: black;
+        }
+
+        input {
+          width: 20px;
+          border: none;
+          outline: none;
+          text-align: center;
+        }
+      }
+
+      &-button {
+        display: flex;
+
+        button {
+          font-size: 10px;
+        }
+      }
+    }
+
+    .add-task {
+      width: 90%;
+      display: flex;
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid white;
+
+      input {
+        width: 100%;
+        padding: 5px 10px;
+      }
+
+      select {
+        width: 100px;
+      }
     }
   }
 }
