@@ -178,6 +178,21 @@
 
         button {
           font-size: 10px;
+          border: 1px solid brown;
+
+          &[data-color=chocolate] {
+            background-color: chocolate;
+            border-right: none;
+          }
+  
+          &[data-color=cyan] {
+            background-color: cyan;
+            border-right: none;
+          }
+
+          &.reset {
+            border-left: none;
+          }
         }
       }
     }

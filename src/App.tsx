@@ -1,19 +1,9 @@
 import React, { ChangeEvent, FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
 import './App.scss';
-import { addTaskCategories, addTaskList, getTaskCategories, getTaskList, GetTime, TruncateTime } from './helper';
+import { addTaskCategories, addTaskList, getTaskCategories, getTaskList, getTaskTimerData, GetTime, TruncateTime } from './helper';
 import { StartStopWatchInterface, TaskCategories, TaskListInterface, TaskTimer } from './interfaces';
 
 function App() {
-  const startButtonText = {
-    start: 'START',
-    pause: 'PAUSE'
-  }
-
-  const buttonColor = {
-    start: 'cyan',
-    pause: 'chocolate'
-  }
-
   const categoriesText = {
     show: 'SHOW CATEGORIES',
     hide: 'HIDE CATEGORIES'
@@ -23,8 +13,6 @@ function App() {
   const [minutes, setMinutes] = useState('00')
   const [seconds, setSeconds] = useState('00')
   const [milliseconds, setMilliseconds] = useState(0)
-  const [countDownButtonText, setCountDownButtonText] = useState(startButtonText.start)
-  const [attrButtonColor, setAttrButtonColor] = useState(buttonColor.start)
   const [showCategories, setShowCategories] = useState(Boolean)
   const [stateCategoriesText, setStateCategoriesText] = useState(categoriesText.show)
   const [categoriesOptions, setCategoriesOptions] = useState<TaskCategories[]>([])
@@ -35,11 +23,111 @@ function App() {
 
   const refTimeInterval: any = useRef()
   const refStopWatch: any = useRef()
-  const refStartButton = useRef<HTMLButtonElement>(null)
   const refCategoriesInput = useRef<HTMLInputElement>(null)
   const refSelectCategories = useRef<HTMLSelectElement>(null)
 
   useEffect(() => {
+    let index: null | number = null
+    getTaskList().map((task, i) => task.isPlay === true ? index = i : task)
+
+    if(index !== null) {
+      setStartStopWatch({
+        isPlay: true,
+        taskIndex: index
+      })
+    }
+
+    setCategoriesOptions(getTaskCategories())
+    setTaskList(getTaskList())
+
+    return () => {
+      cancelAnimationFrame(refTimeInterval.current)
+    }
+  }, [])
+
+  useEffect(() => {
+    if(categoriesOptions.length) {
+      setCategoriesSelected(categoriesOptions.filter(option => option.isSelected === true)[0]?.name)
+    }
+    addTaskCategories(categoriesOptions)
+  }, [categoriesOptions])
+
+  const updateTaskList = useCallback((index: number, elapsedTime: number, prevTime: number) => {
+    const time = updateTime(elapsedTime)
+    const hours = TruncateTime(time.hours)
+    const minutes = TruncateTime(time.minutes)
+    const seconds = TruncateTime(time.seconds)
+
+    const taskList = getTaskList().map((task, i) => i === index ? {
+      ...task,
+      hours,
+      minutes,
+      seconds,
+      elapsedTime,
+      prevTime
+    } : task)
+    setTaskList(taskList)
+    addTaskList(taskList)
+  },[])
+
+  useEffect(() => {
+    const startTimerCountdown = (type: string) => {
+      let taskTimerData: TaskTimer
+      
+      switch (type) {
+        case 'start':
+          if(parseInt(hours) === 0 && parseInt(minutes) === 0 && parseInt(seconds) === 0) {
+            return
+          }
+  
+          const countDownTime = GetTime(parseInt(hours), parseInt(minutes), parseInt(seconds), milliseconds)
+  
+          const animate = () => {
+            const now = new Date().getTime()
+            const distance = countDownTime - now
+  
+            if(distance < 0) {
+              cancelAnimationFrame(refTimeInterval.current)
+              taskTimerData.isPause = true
+            }
+            else {
+              const intervalHours = TruncateTime(Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)))
+              const intervalMinutes = TruncateTime(Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)))
+              const intervalSeconds = TruncateTime(Math.floor((distance % (1000 * 60)) / 1000))
+              const intervalMilliseconds = Math.floor(distance % 1000)
+  
+              taskTimerData = {
+                hours: intervalHours,
+                minutes: intervalMinutes,
+                seconds: intervalSeconds,
+                isPause: false,
+                countDownTime: GetTime(parseInt(intervalHours), parseInt(intervalMinutes), parseInt(intervalSeconds), intervalMilliseconds)
+              }
+  
+              setHours(intervalHours)
+              setMinutes(intervalMinutes)
+              setSeconds(intervalSeconds)
+            }
+    
+            localStorage.setItem('taskTimerData', JSON.stringify(taskTimerData))
+            refTimeInterval.current = requestAnimationFrame(animate)
+          }
+  
+          refTimeInterval.current = requestAnimationFrame(animate)
+          break;
+  
+        case 'pause':
+          cancelAnimationFrame(refTimeInterval.current)
+          
+          const storageTaskTimerData = getTaskTimerData() 
+          localStorage.setItem('taskTimerData', JSON.stringify({...storageTaskTimerData, isPause: true}))
+          break;
+      
+        default:
+          break;
+      }
+    }
+    
     const jsonData: TaskTimer = JSON.parse(localStorage.getItem('taskTimerData') as any)
 
     if(jsonData) {
@@ -55,10 +143,6 @@ function App() {
           setMinutes(TruncateTime(diffMinutes))
           setSeconds(TruncateTime(diffSeconds))
           setMilliseconds(diffMilliseconds)
-
-          setTimeout(() => {
-            refStartButton.current?.click()
-          }, 100);
         }
         else {
           const taskTimerData = {
@@ -79,54 +163,34 @@ function App() {
       }
     }
 
-    setCategoriesOptions(getTaskCategories())
-    setTaskList(getTaskList())
+    if(startStopWatch) {
+      if(startStopWatch?.isPlay) {
+        const taskListData = getTaskList().filter((task, i) => i === startStopWatch?.taskIndex)[0]
+        let prevTime = taskListData.prevTime ? taskListData.prevTime : new Date().getTime()
+        let elapsedTime = taskListData.elapsedTime
 
-    return () => {
-      cancelAnimationFrame(refTimeInterval.current)
+        const animate = () => {
+          elapsedTime += new Date().getTime() - prevTime;
+          prevTime = new Date().getTime()
+        
+          updateTaskList(startStopWatch?.taskIndex!, elapsedTime, prevTime)
+          refStopWatch.current = requestAnimationFrame(animate)
+        }
+        refStopWatch.current = requestAnimationFrame(animate)
+        startTimerCountdown('start')
+      }
+      else {
+        cancelAnimationFrame(refStopWatch.current)
+        const taskList = getTaskList().map((task, i) => i === startStopWatch?.taskIndex ? {
+          ...task,
+          prevTime: null
+        } : task)
+        setTaskList(taskList)
+        addTaskList(taskList)
+        startTimerCountdown('pause')
+      }
     }
-  }, [])
-
-  useEffect(() => {
-    if(categoriesOptions.length) {
-      setCategoriesSelected(categoriesOptions.filter(option => option.isSelected === true)[0]?.name)
-    }
-    addTaskCategories(categoriesOptions)
-  }, [categoriesOptions])
-
-  // useEffect(() => {
-  //   addTaskList(taskList)
-  // }, [taskList])
-
-  const updateTaskList = useCallback((index: number, elapsedTime: number) => {
-    elapsedTime += getTaskList().filter((task, i) => i === index)[0].elapsedTime
-    const time = updateTime(elapsedTime)
-    const hours = TruncateTime(time.hours)
-    const minutes = TruncateTime(time.minutes)
-    const seconds = TruncateTime(time.seconds)
-
-    const taskList = getTaskList().map((task, i) => i === index ? {...task, elapsedTime, hours, minutes, seconds} : task)
-    setTaskList(taskList)
-    addTaskList(taskList)
-  },[])
-
-  useEffect(() => {
-    let prevTime = new Date().getTime()
-    let elapsedTime = 0
-
-    const runInterval = () => {
-      elapsedTime += new Date().getTime() - prevTime;
-      prevTime = new Date().getTime()
-    
-      updateTaskList(startStopWatch?.taskIndex!, elapsedTime)
-    }
-
-    if(startStopWatch?.isPlay) {
-      refStopWatch.current = setInterval(runInterval, 500)
-    }
-    else {
-      clearInterval(refStopWatch.current)
-    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startStopWatch, updateTaskList])
 
   const updateTime = (elapsedTime: number) => {
@@ -202,75 +266,6 @@ function App() {
     }
   }
 
-  const startTimerCountdown = (e: any) => {
-    let taskTimerData: TaskTimer
-    
-    switch (e.target.textContent.toLowerCase()) {
-      case 'start':
-        if(parseInt(hours) === 0 && parseInt(minutes) === 0 && parseInt(seconds) === 0) {
-          return
-        }
-
-        const countDownTime = GetTime(parseInt(hours), parseInt(minutes), parseInt(seconds), milliseconds)
-        setCountDownButtonText(startButtonText.pause)
-        setAttrButtonColor(buttonColor.pause)
-
-        const animate = () => {
-          const now = new Date().getTime()
-          const distance = countDownTime - now
-
-          if(distance < 0) {
-            cancelAnimationFrame(refTimeInterval.current)
-            taskTimerData.isPause = true
-            setCountDownButtonText(startButtonText.start)
-          }
-          else {
-            const intervalHours = TruncateTime(Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)))
-            const intervalMinutes = TruncateTime(Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)))
-            const intervalSeconds = TruncateTime(Math.floor((distance % (1000 * 60)) / 1000))
-            const intervalMilliseconds = Math.floor(distance % 1000)
-
-            taskTimerData = {
-              hours: intervalHours,
-              minutes: intervalMinutes,
-              seconds: intervalSeconds,
-              isPause: false,
-              countDownTime: GetTime(parseInt(intervalHours), parseInt(intervalMinutes), parseInt(intervalSeconds), intervalMilliseconds)
-            }
-
-            setHours(intervalHours)
-            setMinutes(intervalMinutes)
-            setSeconds(intervalSeconds)
-          }
-  
-          localStorage.setItem('taskTimerData', JSON.stringify(taskTimerData))
-          refTimeInterval.current = requestAnimationFrame(animate)
-        }
-
-        refTimeInterval.current = requestAnimationFrame(animate)
-        break;
-
-      case 'pause':
-        setCountDownButtonText(startButtonText.start)
-        setAttrButtonColor(buttonColor.start)
-        cancelAnimationFrame(refTimeInterval.current)
-        
-        taskTimerData = {
-          hours,
-          minutes,
-          seconds,
-          isPause: true,
-          countDownTime: GetTime(parseInt(hours), parseInt(minutes), parseInt(seconds), milliseconds)
-        }
-
-        localStorage.setItem('taskTimerData', JSON.stringify(taskTimerData))
-        break;
-    
-      default:
-        break;
-    }
-  }
-
   const handleShowCategories = () => {
     setShowCategories(!showCategories)
     setStateCategoriesText(showCategories ? categoriesText.show : categoriesText.hide)
@@ -321,7 +316,8 @@ function App() {
       hours: '00',
       minutes: '00',
       seconds: '00',
-      elapsedTime: 0
+      elapsedTime: 0,
+      prevTime: null
     }, ...taskList]
     setTaskList(newTaskList)
     addTaskList(newTaskList)
@@ -340,12 +336,19 @@ function App() {
   }
 
   const handleTaskPlay = (index: number, isPlay: boolean) => {
-    clearInterval(refStopWatch.current)
+    cancelAnimationFrame(refStopWatch.current)
     setStartStopWatch({
       isPlay: !isPlay,
       taskIndex: index
     })
-    const taskList = getTaskList().map((task, i) => i === index ? {...task, isPlay: !task.isPlay} : {...task, isPlay: false})
+
+    let previousPlayIndex: null | number = null
+
+    getTaskList().filter((task, i) => task.isPlay ? previousPlayIndex = i : task)
+
+    let taskList = getTaskList().map((task, i) => i === index ? {...task, isPlay: !task.isPlay} : {...task, isPlay: false})
+
+    taskList = taskList.map((task, i) => i === previousPlayIndex ? {...task, prevTime: null} : task)
     setTaskList(taskList)
     addTaskList(taskList)
   }
@@ -355,7 +358,7 @@ function App() {
       <div className="author">Developed by: Richmond Z. Coca</div>
       <div className="container">
         <div className="timers">
-          <button ref={refStartButton} data-color={attrButtonColor} onClick={startTimerCountdown}>{countDownButtonText}</button>
+          {/* <button ref={refStartButton} data-color={attrButtonColor} onClick={startTimerCountdown}>{countDownButtonText}</button> */}
           <div className="timer" data-text="hours">
             <input
               onKeyUp={(e) => onKeyUp(e, 'hours')}
@@ -428,8 +431,8 @@ function App() {
               taskList.map((task, index) =>
                 <div className="task-list" key={index}>
                   <div className="task-lists-button">
-                    <button onClick={(e) => handleTaskPlay(index, task.isPlay)}>{task.isPlay ? 'PAUSE' : 'PLAY'}</button>
-                    <button>RESET</button>
+                    <button data-color={task.isPlay ? 'chocolate' : 'cyan'} onClick={(e) => handleTaskPlay(index, task.isPlay)}>{task.isPlay ? 'PAUSE' : 'PLAY'}</button>
+                    <button className="reset">RESET</button>
                   </div>
                   <input value={task.name} onChange={e => handleTaskListChange(e, index, 'name')} className="task-name" type="text" />
                   {
