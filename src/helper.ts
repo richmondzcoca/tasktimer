@@ -17,7 +17,7 @@ export const getTaskTimerData = () => {
     return jsonData
 }
 
-export const addTaskTimerData = (data: TaskTimer) => {
+export const setTaskTimerData = (data: TaskTimer) => {
     localStorage.setItem('taskTimerData', JSON.stringify(data))
 }
 

@@ -1,6 +1,6 @@
 import React, { ChangeEvent, FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
 import './App.scss';
-import { addTaskCategories, addTaskList, getTaskCategories, getTaskList, getTaskTimerData, GetTime, TruncateTime } from './helper';
+import { addTaskCategories, addTaskList, getTaskCategories, getTaskList, getTaskTimerData, GetTime, setTaskTimerData, TruncateTime } from './helper';
 import { StartStopWatchInterface, TaskCategories, TaskListInterface, TaskTimer } from './interfaces';
 
 function App() {
@@ -73,6 +73,7 @@ function App() {
   useEffect(() => {
     const startTimerCountdown = (type: string) => {
       let taskTimerData: TaskTimer
+      const storageTaskTimerData = getTaskTimerData()
       
       switch (type) {
         case 'start':
@@ -80,7 +81,16 @@ function App() {
             return
           }
   
-          const countDownTime = GetTime(parseInt(hours), parseInt(minutes), parseInt(seconds), milliseconds)
+          let countDownTime = GetTime(parseInt(hours), parseInt(minutes), parseInt(seconds), milliseconds)
+
+          if(storageTaskTimerData.isPause) {
+            const resumeTime = new Date(new Date().getTime() + storageTaskTimerData.distance).getTime()
+            countDownTime = resumeTime
+          }
+
+          const taskListData = getTaskList().filter((task, i) => i === startStopWatch?.taskIndex)[0]
+          let prevTime = taskListData.prevTime ? taskListData.prevTime : new Date().getTime() - 1000
+          let elapsedTime = taskListData.elapsedTime
   
           const animate = () => {
             const now = new Date().getTime()
@@ -94,14 +104,17 @@ function App() {
               const intervalHours = TruncateTime(Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)))
               const intervalMinutes = TruncateTime(Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)))
               const intervalSeconds = TruncateTime(Math.floor((distance % (1000 * 60)) / 1000))
-              const intervalMilliseconds = Math.floor(distance % 1000)
+
+              elapsedTime += now - prevTime
+              prevTime = new Date().getTime()
+              updateTaskList(startStopWatch?.taskIndex!, elapsedTime, prevTime)
   
               taskTimerData = {
                 hours: intervalHours,
                 minutes: intervalMinutes,
                 seconds: intervalSeconds,
                 isPause: false,
-                countDownTime: GetTime(parseInt(intervalHours), parseInt(intervalMinutes), parseInt(intervalSeconds), intervalMilliseconds)
+                distance
               }
   
               setHours(intervalHours)
@@ -119,8 +132,14 @@ function App() {
         case 'pause':
           cancelAnimationFrame(refTimeInterval.current)
           
-          const storageTaskTimerData = getTaskTimerData() 
           localStorage.setItem('taskTimerData', JSON.stringify({...storageTaskTimerData, isPause: true}))
+          const taskList = getTaskList().map((task, i) => i === startStopWatch?.taskIndex ? {
+            ...task,
+            prevTime: null,
+            elapsedTime: task.elapsedTime - 1000
+          } : task)
+          setTaskList(taskList)
+          addTaskList(taskList)
           break;
       
         default:
@@ -132,7 +151,7 @@ function App() {
 
     if(jsonData) {
       if(!jsonData.isPause) {
-        const diff = (jsonData.countDownTime - new Date().getTime())
+        const diff = new Date(new Date().getTime() + jsonData.distance).getTime() - new Date().getTime()
         const diffHours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
         const diffMinutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
         const diffSeconds = Math.floor((diff % (1000 * 60)) / 1000)
@@ -145,15 +164,15 @@ function App() {
           setMilliseconds(diffMilliseconds)
         }
         else {
-          const taskTimerData = {
+          const taskTimerData: TaskTimer = {
             hours: "00",
             minutes: "00",
             seconds: "00",
             isPause: false,
-            countDownTime: GetTime(0, 0, 0)
+            distance: 0
           }
-  
-          localStorage.setItem('taskTimerData', JSON.stringify(taskTimerData))
+
+          setTaskTimerData(taskTimerData)
         }
       }
       else {
@@ -165,28 +184,28 @@ function App() {
 
     if(startStopWatch) {
       if(startStopWatch?.isPlay) {
-        const taskListData = getTaskList().filter((task, i) => i === startStopWatch?.taskIndex)[0]
-        let prevTime = taskListData.prevTime ? taskListData.prevTime : new Date().getTime()
-        let elapsedTime = taskListData.elapsedTime
+        // const taskListData = getTaskList().filter((task, i) => i === startStopWatch?.taskIndex)[0]
+        // let prevTime = taskListData.prevTime ? taskListData.prevTime : new Date().getTime()
+        // let elapsedTime = taskListData.elapsedTime
 
-        const animate = () => {
-          elapsedTime += new Date().getTime() - prevTime;
-          prevTime = new Date().getTime()
+        // const animate = () => {
+        //   elapsedTime += new Date().getTime() - prevTime;
+        //   prevTime = new Date().getTime()
         
-          updateTaskList(startStopWatch?.taskIndex!, elapsedTime, prevTime)
-          refStopWatch.current = requestAnimationFrame(animate)
-        }
-        refStopWatch.current = requestAnimationFrame(animate)
+        //   updateTaskList(startStopWatch?.taskIndex!, elapsedTime, prevTime)
+        //   refStopWatch.current = requestAnimationFrame(animate)
+        // }
+        // refStopWatch.current = requestAnimationFrame(animate)
         startTimerCountdown('start')
       }
       else {
-        cancelAnimationFrame(refStopWatch.current)
-        const taskList = getTaskList().map((task, i) => i === startStopWatch?.taskIndex ? {
-          ...task,
-          prevTime: null
-        } : task)
-        setTaskList(taskList)
-        addTaskList(taskList)
+        // cancelAnimationFrame(refStopWatch.current)
+        // const taskList = getTaskList().map((task, i) => i === startStopWatch?.taskIndex ? {
+        //   ...task,
+        //   prevTime: null
+        // } : task)
+        // setTaskList(taskList)
+        // addTaskList(taskList)
         startTimerCountdown('pause')
       }
     }
@@ -227,6 +246,7 @@ function App() {
   }
 
   const onChange = (e: ChangeEvent<HTMLInputElement>, type: string) => {
+    setTaskTimerData({...getTaskTimerData(), distance: 0, isPause: false})
     switch (type) {
       case 'hours':
         setHours(e.target.value)

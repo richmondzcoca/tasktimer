@@ -3,7 +3,7 @@ export interface TaskTimer {
     minutes: string,
     seconds: string,
     isPause: boolean,
-    countDownTime: number
+    distance: number
 }
 
 export interface TaskCategories {
@@ -19,7 +19,7 @@ export interface TaskListInterface {
     minutes: string,
     seconds: string,
     elapsedTime: number,
-    prevTime: number | null
+    prevTime: number | null,
 }
 
 export interface StartStopWatchInterface {
