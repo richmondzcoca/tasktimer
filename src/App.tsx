@@ -12,7 +12,7 @@ function App() {
   const [hours, setHours] = useState('08')
   const [minutes, setMinutes] = useState('00')
   const [seconds, setSeconds] = useState('00')
-  const [milliseconds, setMilliseconds] = useState(0)
+  const [milliseconds] = useState(0)
   const [showCategories, setShowCategories] = useState(Boolean)
   const [stateCategoriesText, setStateCategoriesText] = useState(categoriesText.show)
   const [categoriesOptions, setCategoriesOptions] = useState<TaskCategories[]>([])
@@ -22,7 +22,6 @@ function App() {
   const [startStopWatch, setStartStopWatch] = useState<StartStopWatchInterface>()
 
   const refTimeInterval: any = useRef()
-  const refStopWatch: any = useRef()
   const refCategoriesInput = useRef<HTMLInputElement>(null)
   const refSelectCategories = useRef<HTMLSelectElement>(null)
 
@@ -71,9 +70,10 @@ function App() {
   },[])
 
   useEffect(() => {
+    const storageTaskTimerData = getTaskTimerData()
+    
     const startTimerCountdown = (type: string) => {
       let taskTimerData: TaskTimer
-      const storageTaskTimerData = getTaskTimerData()
       
       switch (type) {
         case 'start':
@@ -81,14 +81,14 @@ function App() {
             return
           }
   
-          let countDownTime = GetTime(parseInt(hours), parseInt(minutes), parseInt(seconds), milliseconds)
+          let countDownTime = storageTaskTimerData.countDownTime || GetTime(parseInt(hours), parseInt(minutes), parseInt(seconds), milliseconds)
 
-          if(storageTaskTimerData.isPause) {
+          if(storageTaskTimerData.isPause && storageTaskTimerData.countDownTime) {
             const resumeTime = new Date(new Date().getTime() + storageTaskTimerData.distance).getTime()
             countDownTime = resumeTime
           }
 
-          const taskListData = getTaskList().filter((task, i) => i === startStopWatch?.taskIndex)[0]
+          const taskListData = getTaskList().filter(task => task.isPlay)[0]
           let prevTime = taskListData.prevTime ? taskListData.prevTime : new Date().getTime() - 1000
           let elapsedTime = taskListData.elapsedTime
   
@@ -114,7 +114,8 @@ function App() {
                 minutes: intervalMinutes,
                 seconds: intervalSeconds,
                 isPause: false,
-                distance
+                distance,
+                countDownTime: new Date(new Date().getTime() + distance).getTime()
               }
   
               setHours(intervalHours)
@@ -146,68 +147,24 @@ function App() {
           break;
       }
     }
-    
-    const jsonData: TaskTimer = JSON.parse(localStorage.getItem('taskTimerData') as any)
-
-    if(jsonData) {
-      if(!jsonData.isPause) {
-        const diff = new Date(new Date().getTime() + jsonData.distance).getTime() - new Date().getTime()
-        const diffHours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-        const diffMinutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-        const diffSeconds = Math.floor((diff % (1000 * 60)) / 1000)
-        const diffMilliseconds = Math.floor((diff % 1000))
-
-        if(diff > 0) {
-          setHours(TruncateTime(diffHours))
-          setMinutes(TruncateTime(diffMinutes))
-          setSeconds(TruncateTime(diffSeconds))
-          setMilliseconds(diffMilliseconds)
-        }
-        else {
-          const taskTimerData: TaskTimer = {
-            hours: "00",
-            minutes: "00",
-            seconds: "00",
-            isPause: false,
-            distance: 0
-          }
-
-          setTaskTimerData(taskTimerData)
-        }
-      }
-      else {
-        setHours(TruncateTime(parseInt(jsonData.hours)))
-        setMinutes(TruncateTime(parseInt(jsonData.minutes)))
-        setSeconds(TruncateTime(parseInt(jsonData.seconds)))
-      }
-    }
 
     if(startStopWatch) {
       if(startStopWatch?.isPlay) {
-        // const taskListData = getTaskList().filter((task, i) => i === startStopWatch?.taskIndex)[0]
-        // let prevTime = taskListData.prevTime ? taskListData.prevTime : new Date().getTime()
-        // let elapsedTime = taskListData.elapsedTime
-
-        // const animate = () => {
-        //   elapsedTime += new Date().getTime() - prevTime;
-        //   prevTime = new Date().getTime()
-        
-        //   updateTaskList(startStopWatch?.taskIndex!, elapsedTime, prevTime)
-        //   refStopWatch.current = requestAnimationFrame(animate)
-        // }
-        // refStopWatch.current = requestAnimationFrame(animate)
         startTimerCountdown('start')
       }
       else {
-        // cancelAnimationFrame(refStopWatch.current)
-        // const taskList = getTaskList().map((task, i) => i === startStopWatch?.taskIndex ? {
-        //   ...task,
-        //   prevTime: null
-        // } : task)
-        // setTaskList(taskList)
-        // addTaskList(taskList)
         startTimerCountdown('pause')
       }
+    }
+    else if(storageTaskTimerData.distance) {
+     const countDownTime = new Date(new Date().getTime() + storageTaskTimerData.distance).getTime() - new Date().getTime()
+     const diffHours = Math.floor((countDownTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+      const diffMinutes = Math.floor((countDownTime % (1000 * 60 * 60)) / (1000 * 60))
+      const diffSeconds = Math.floor((countDownTime % (1000 * 60)) / 1000)
+     
+      setHours(TruncateTime(diffHours))
+      setMinutes(TruncateTime(diffMinutes))
+      setSeconds(TruncateTime(diffSeconds))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startStopWatch, updateTaskList])
@@ -246,7 +203,7 @@ function App() {
   }
 
   const onChange = (e: ChangeEvent<HTMLInputElement>, type: string) => {
-    setTaskTimerData({...getTaskTimerData(), distance: 0, isPause: false})
+    setTaskTimerData({...getTaskTimerData(), distance: 0, countDownTime: 0, isPause: false})
     switch (type) {
       case 'hours':
         setHours(e.target.value)
@@ -329,7 +286,8 @@ function App() {
 
   const handleAddTaskSubmit = (e: FormEvent) => {
     e.preventDefault()
-    const newTaskList = [{
+    const newTaskList: TaskListInterface[] = [
+      ...taskList, {
       name: taskName,
       taskCategory: categoriesSelected,
       isPlay: false,
@@ -337,8 +295,8 @@ function App() {
       minutes: '00',
       seconds: '00',
       elapsedTime: 0,
-      prevTime: null
-    }, ...taskList]
+      prevTime: null,
+    }]
     setTaskList(newTaskList)
     addTaskList(newTaskList)
     setTaskName('')
@@ -356,7 +314,7 @@ function App() {
   }
 
   const handleTaskPlay = (index: number, isPlay: boolean) => {
-    cancelAnimationFrame(refStopWatch.current)
+    cancelAnimationFrame(refTimeInterval.current)
     setStartStopWatch({
       isPlay: !isPlay,
       taskIndex: index
@@ -373,12 +331,42 @@ function App() {
     addTaskList(taskList)
   }
 
+  const handleTaskListReset = (index: number) => {
+    const newTaskList = taskList.map((task, i) => i === index ? {
+      ...task,
+      elapsedTime: 0,
+      hours: '00',
+      minutes: '00',
+      seconds: '00'
+    } : task)
+    setTaskList(newTaskList)
+    addTaskList(newTaskList)
+  }
+
+  const handleCountDownReset = () => {
+    if(window.confirm('Reset timer and delete all tasklist?')) {
+      setHours('08')
+      setMinutes('00')
+      setSeconds('00')
+      setTaskTimerData({
+        hours: '08',
+        minutes: '00',
+        seconds: '00',
+        isPause: true,
+        countDownTime: 0,
+        distance: 0,
+      })
+      setTaskList([])
+      addTaskList([])
+    }
+  }
+
   return (
     <div className="app">
       <div className="author">Developed by: Richmond Z. Coca</div>
       <div className="container">
         <div className="timers">
-          {/* <button ref={refStartButton} data-color={attrButtonColor} onClick={startTimerCountdown}>{countDownButtonText}</button> */}
+          <button disabled={startStopWatch?.isPlay} onClick={handleCountDownReset}>RESET</button>
           <div className="timer" data-text="hours">
             <input
               onKeyUp={(e) => onKeyUp(e, 'hours')}
@@ -406,80 +394,88 @@ function App() {
             />
           </div>
         </div>
-        <button className="show-categories" onClick={handleShowCategories}>{stateCategoriesText}</button>
-        {
-          showCategories &&
-          <div className="categories">
-            <form className="add-categories" onSubmit={onSubmitCategories}>
-              <button>ADD</button>
-              <input ref={refCategoriesInput} placeholder="Add categories" type="text" />
-            </form>
-            {
-              categoriesOptions.length !== 0 &&
-              <div className="select-container">
-                <button onClick={handleRemoveCategories}>REMOVE</button>
-                <select ref={refSelectCategories} value={categoriesSelected} onChange={handleOnChangeCategories}>
-                  {
-                    categoriesOptions.map( (optionData, index) =>
-                      <option key={index} value={optionData.name}>{optionData.name}</option>
-                    )
-                  }
-                </select>
-              </div>
-            }
-          </div>
-        }
-        <form className="add-task" onSubmit={handleAddTaskSubmit}>
-          <button>ADD</button>
-          <input value={taskName} onChange={handleTaskNameChange} type="text" placeholder="Enter a new task name..." />
+        <div className={`categories-container${showCategories ? ' show' : ''}`}>
+          <button className="show-categories" onClick={handleShowCategories}>{stateCategoriesText}</button>
           {
-            categoriesOptions.length > 0 &&
-            <select value={categoriesSelected} onChange={handleAddTaskCategoryChange}>
+            showCategories &&
+            <div className="categories">
+              <form className="add-categories" onSubmit={onSubmitCategories}>
+                <button>ADD</button>
+                <input ref={refCategoriesInput} placeholder="Add categories" type="text" />
+              </form>
               {
-                categoriesOptions.map((each, index) =>
-                  <option key={index} value={each.name}>{each.name}</option>
+                categoriesOptions.length !== 0 &&
+                <div className="select-container">
+                  <button onClick={handleRemoveCategories}>REMOVE</button>
+                  <select ref={refSelectCategories} value={categoriesSelected} onChange={handleOnChangeCategories}>
+                    {
+                      categoriesOptions.map( (optionData, index) =>
+                        <option key={index} value={optionData.name}>{optionData.name}</option>
+                      )
+                    }
+                  </select>
+                </div>
+              }
+            </div>
+          }
+        </div>
+        <div className="add-task-container">
+          <form className="add-task" onSubmit={handleAddTaskSubmit}>
+            <button>ADD</button>
+            <input value={taskName} onChange={handleTaskNameChange} type="text" placeholder="Enter a new task name..." />
+            {
+              categoriesOptions.length > 0 &&
+              <select value={categoriesSelected} onChange={handleAddTaskCategoryChange}>
+                {
+                  categoriesOptions.map((each, index) =>
+                    <option key={index} value={each.name}>{each.name}</option>
+                  )
+                }
+              </select>
+            }
+          </form>
+          {
+            taskList.length > 0 &&
+            <div className="task-lists">
+              {
+                taskList.length > 0 &&
+                taskList.map((task, index) =>
+                  <div className="task-list" key={index}>
+                    <div className="task-lists-button">
+                      <button disabled={startStopWatch?.isPlay && !task.isPlay} data-color={task.isPlay ? 'chocolate' : 'cyan'} onClick={(e) => handleTaskPlay(index, task.isPlay)}>{task.isPlay ? 'PAUSE' : 'PLAY'}</button>
+                      <button disabled={startStopWatch?.isPlay} className="reset" onClick={() => handleTaskListReset(index)}>RESET</button>
+                    </div>
+                    <input value={task.name} onChange={e => handleTaskListChange(e, index, 'name')} className="task-name" type="text" />
+                    {
+                      categoriesOptions.length > 0 &&
+                      <select value={task.taskCategory} onChange={e => handleTaskListChange(e, index, 'taskCategory')} name="" id="">
+                        {
+                          task.taskCategory === '' &&
+                          <option>Select Category</option>
+                        }
+                        {
+                          categoriesOptions.map((each, index) =>
+                            <option key={index} value={each.name}>{each.name}</option>
+                          )
+                        }
+                      </select>
+                    }
+                    <div className="task-lists-timer">
+                      <input onChange={e => handleTaskListChange(e, index, 'hours')} value={task.hours} type="text" maxLength={2} />
+                      :
+                      <input onChange={e => handleTaskListChange(e, index, 'minutes')} value={task.minutes} type="text" maxLength={2} />
+                      :
+                      <input onChange={e => handleTaskListChange(e, index, 'seconds')} value={task.seconds} type="text" maxLength={2} />
+                    </div>
+                    <div className='delete-container'>
+                      <button onClick={() => handleTaskListDelete(index)} className='delete'>DELETE</button>
+                    </div>
+                  </div>
                 )
               }
-            </select>
+            </div>
           }
-        </form>
-        {
-          taskList.length > 0 &&
-          <div className="task-lists">
-            {
-              taskList.length > 0 &&
-              taskList.map((task, index) =>
-                <div className="task-list" key={index}>
-                  <div className="task-lists-button">
-                    <button data-color={task.isPlay ? 'chocolate' : 'cyan'} onClick={(e) => handleTaskPlay(index, task.isPlay)}>{task.isPlay ? 'PAUSE' : 'PLAY'}</button>
-                    <button className="reset">RESET</button>
-                  </div>
-                  <input value={task.name} onChange={e => handleTaskListChange(e, index, 'name')} className="task-name" type="text" />
-                  {
-                    categoriesOptions.length > 0 &&
-                    <select value={task.taskCategory} onChange={e => handleTaskListChange(e, index, 'taskCategory')} name="" id="">
-                      {
-                        categoriesOptions.map((each, index) =>
-                          <option key={index} value={each.name}>{each.name}</option>
-                        )
-                      }
-                    </select>
-                  }
-                  <div className="task-lists-timer">
-                    <input onChange={e => handleTaskListChange(e, index, 'hours')} value={task.hours} type="text" maxLength={2} />
-                    :
-                    <input onChange={e => handleTaskListChange(e, index, 'minutes')} value={task.minutes} type="text" maxLength={2} />
-                    :
-                    <input onChange={e => handleTaskListChange(e, index, 'seconds')} value={task.seconds} type="text" maxLength={2} />
-                  </div>
-                  <div className='delete-container'>
-                    <button onClick={() => handleTaskListDelete(index)} className='delete'>DELETE</button>
-                  </div>
-                </div>
-              )
-            }
-          </div>
-        }
+        </div>
       </div>
     </div>
   );
