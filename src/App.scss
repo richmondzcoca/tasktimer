@@ -275,5 +275,43 @@
         width: 100px;
       }
     }
+
+    .task-total {
+      &-hours {
+        width: 95%;
+        margin-top: 20px;
+        font-size: 14px;
+        display: flex;
+        flex-direction: column;
+
+        h1 {
+          font-size: 18px;
+        }
+
+        &-container {
+          display: flex;
+        }
+        .caret {
+          transform: rotate(89deg);
+          font-family: monospace;
+          font-size: 30px;
+          align-self: flex-end;
+          background: none;
+          border: none;
+          color: white;
+          transition: transform 300ms ease-in-out;
+
+          &.show {
+            transform: rotate(-88deg);
+          }
+        }
+      }
+
+      &-categories {
+        width: 130px;
+        display: flex;
+        justify-content: space-between;
+      }
+    }
   }
 }

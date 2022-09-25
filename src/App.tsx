@@ -20,6 +20,7 @@ function App() {
   const [taskList, setTaskList] = useState<TaskListInterface[]>([])
   const [taskName, setTaskName] = useState('')
   const [startStopWatch, setStartStopWatch] = useState<StartStopWatchInterface>()
+  const [showTotalHours, setShowTotalHours] = useState(false)
 
   const refTimeInterval: any = useRef()
   const refCategoriesInput = useRef<HTMLInputElement>(null)
@@ -366,6 +367,10 @@ function App() {
     }
   }
 
+  const handleShowTotalHours = () => {
+    setShowTotalHours(!showTotalHours)
+  }
+
   return (
     <div className="app">
       <div className="author">Developed by: Richmond Z. Coca</div>
@@ -485,12 +490,23 @@ function App() {
             </div>
           }
         </div>
-        {/* <div className="task-total-hours">
-          <div className="task-total-categories">
-            <span className="task-total-category-name">Category 1 <span>:</span></span>
-            <span className="task-total-number">3.33h</span>
-          </div>
-        </div> */}
+        <div className="task-total-hours">
+          <button onClick={handleShowTotalHours} className={`caret${showTotalHours ? ' show' : ''}`}>
+            {'>'}
+          </button>
+          {
+            showTotalHours &&
+            <>
+              <h1>Total Hours:</h1>
+              <div className="task-total-hours-container">
+                <div className="task-total-categories">
+                  <span className="task-total-category-name">Category 1<span>:</span> </span>
+                  <span className="task-total-number">3.33h</span>
+                </div>
+              </div>
+            </>
+          }
+        </div>
       </div>
     </div>
   );
