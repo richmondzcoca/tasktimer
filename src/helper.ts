@@ -1,4 +1,4 @@
-import { TaskCategories, TaskTimer } from "./interfaces"
+import { TaskCategories, TaskListInterface, TaskTimer } from "./interfaces"
 
 export const GetTime = (hours: number = 0, minutes: number = 0, seconds: number = 0, milliseconds: number = 0) => {
     const currentTime = new Date().getTime()
@@ -17,7 +17,7 @@ export const getTaskTimerData = () => {
     return jsonData
 }
 
-export const addTaskTimerData = (data: TaskTimer) => {
+export const setTaskTimerData = (data: TaskTimer) => {
     localStorage.setItem('taskTimerData', JSON.stringify(data))
 }
 
@@ -28,4 +28,12 @@ export const getTaskCategories = () => {
 
 export const addTaskCategories = (data: TaskCategories[]) => {
     localStorage.setItem('taskTimerCategories', JSON.stringify(data))
+}
+
+export const getTaskList = () => {
+    return JSON.parse(localStorage.getItem('taskListData') || '[]') as TaskListInterface[]
+}
+
+export const addTaskList = (data: TaskListInterface[]) => {
+    localStorage.setItem('taskListData', JSON.stringify(data))
 }
