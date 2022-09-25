@@ -56,6 +56,7 @@ function App() {
     const hours = TruncateTime(time.hours)
     const minutes = TruncateTime(time.minutes)
     const seconds = TruncateTime(time.seconds)
+    const hoursEquivalent = (time.hours + (time.minutes / 60)).toFixed(2)
 
     const taskList = getTaskList().map((task, i) => i === index ? {
       ...task,
@@ -63,7 +64,8 @@ function App() {
       minutes,
       seconds,
       elapsedTime,
-      prevTime
+      prevTime,
+      hoursEquivalent
     } : task)
     setTaskList(taskList)
     addTaskList(taskList)
@@ -298,6 +300,7 @@ function App() {
       seconds: '00',
       elapsedTime: 0,
       prevTime: null,
+      hoursEquivalent: '0.00'
     }]
     setTaskList(newTaskList)
     addTaskList(newTaskList)
@@ -469,6 +472,10 @@ function App() {
                       :
                       <input readOnly onChange={e => handleTaskListChange(e, index, 'seconds')} value={task.seconds} type="text" maxLength={2} />
                     </div>
+                    <div className="hours-equivalent">
+                      <span>{task.hoursEquivalent}</span>
+                      <span>h</span>
+                    </div>
                     <div className='delete-container'>
                       <button onClick={() => handleTaskListDelete(index)} className='delete'>DELETE</button>
                     </div>
@@ -478,6 +485,12 @@ function App() {
             </div>
           }
         </div>
+        {/* <div className="task-total-hours">
+          <div className="task-total-categories">
+            <span className="task-total-category-name">Category 1 <span>:</span></span>
+            <span className="task-total-number">3.33h</span>
+          </div>
+        </div> */}
       </div>
     </div>
   );

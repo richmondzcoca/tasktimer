@@ -21,6 +21,7 @@ export interface TaskListInterface {
     seconds: string,
     elapsedTime: number,
     prevTime: number | null,
+    hoursEquivalent: string
 }
 
 export interface StartStopWatchInterface {
