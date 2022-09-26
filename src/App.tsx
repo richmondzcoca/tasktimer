@@ -52,7 +52,7 @@ function App() {
     addTaskCategories(categoriesOptions)
   }, [categoriesOptions])
 
-  const updateTaskList = useCallback((index: number, elapsedTime: number, prevTime: number) => {
+  const updateTaskList = useCallback((index: number, elapsedTime: number, prevTime: number, isPlay = true) => {
     const time = updateTime(elapsedTime)
     const hours = TruncateTime(time.hours)
     const minutes = TruncateTime(time.minutes)
@@ -66,7 +66,8 @@ function App() {
       seconds,
       elapsedTime,
       prevTime,
-      hoursEquivalent
+      hoursEquivalent,
+      isPlay
     } : task)
     setTaskList(taskList)
     addTaskList(taskList)
@@ -98,10 +99,32 @@ function App() {
           const animate = () => {
             const now = new Date().getTime()
             const distance = countDownTime - now
+
+            console.log("distance: ", distance)
   
             if(distance < 0) {
+              taskTimerData = {
+                isPause: true,
+                hours: '08',
+                minutes: '00',
+                seconds: '00',
+                distance: 0,
+                countDownTime: 0
+              }
+
+              elapsedTime += now - prevTime
+              prevTime = 0
+              updateTaskList(startStopWatch?.taskIndex!, elapsedTime, prevTime, false)
+              setTaskTimerData(taskTimerData)
+              setStartStopWatch({
+                taskIndex: 0,
+                isPlay: false
+              })
+              setHours('08')
+              setMinutes('00')
+              setSeconds('00')
+              alert('Your time has out.')
               cancelAnimationFrame(refTimeInterval.current)
-              taskTimerData.isPause = true
             }
             else {
               const intervalHours = TruncateTime(Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)))
@@ -124,10 +147,10 @@ function App() {
               setHours(intervalHours)
               setMinutes(intervalMinutes)
               setSeconds(intervalSeconds)
+
+              refTimeInterval.current = requestAnimationFrame(animate)
+              setTaskTimerData(taskTimerData)
             }
-    
-            localStorage.setItem('taskTimerData', JSON.stringify(taskTimerData))
-            refTimeInterval.current = requestAnimationFrame(animate)
           }
   
           refTimeInterval.current = requestAnimationFrame(animate)
@@ -482,7 +505,7 @@ function App() {
                       <span>h</span>
                     </div>
                     <div className='delete-container'>
-                      <button onClick={() => handleTaskListDelete(index)} className='delete'>DELETE</button>
+                      <button disabled={startStopWatch?.isPlay} onClick={() => handleTaskListDelete(index)} className='delete'>DELETE</button>
                     </div>
                   </div>
                 )
@@ -492,7 +515,7 @@ function App() {
         </div>
         <div className="task-total-hours">
           <button onClick={handleShowTotalHours} className={`caret${showTotalHours ? ' show' : ''}`}>
-            {'>'}
+            <span>▲</span>
           </button>
           {
             showTotalHours &&
