@@ -9,7 +9,8 @@ export interface TaskTimer {
 
 export interface TaskCategories {
     name: string,
-    isSelected: boolean
+    isSelected: boolean,
+    totalHours: number
 }
 
 export interface TaskListInterface {

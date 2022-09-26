@@ -1,6 +1,6 @@
 import React, { ChangeEvent, FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
 import './App.scss';
-import { addTaskCategories, addTaskList, getTaskCategories, getTaskList, getTaskTimerData, GetTime, setTaskTimerData, TruncateTime } from './helper';
+import { setTaskCategories, addTaskList, getTaskCategories, getTaskList, getTaskTimerData, GetTime, setTaskTimerData, TruncateTime } from './helper';
 import { StartStopWatchInterface, TaskCategories, TaskListInterface, TaskTimer } from './interfaces';
 
 function App() {
@@ -21,6 +21,7 @@ function App() {
   const [taskName, setTaskName] = useState('')
   const [startStopWatch, setStartStopWatch] = useState<StartStopWatchInterface>()
   const [showTotalHours, setShowTotalHours] = useState(false)
+  const [sumUpAllCategories, setSumUpAllCategories] = useState(0)
 
   const refTimeInterval: any = useRef()
   const refCategoriesInput = useRef<HTMLInputElement>(null)
@@ -45,14 +46,13 @@ function App() {
     }
   }, [])
 
-  useEffect(() => {
-    if(categoriesOptions.length) {
-      setCategoriesSelected(categoriesOptions.filter(option => option.isSelected === true)[0]?.name)
-    }
-    addTaskCategories(categoriesOptions)
-  }, [categoriesOptions])
+  // useEffect(() => {
+  //   if(categoriesOptions.length) {
+  //     setCategoriesSelected(categoriesOptions.filter(option => option.isSelected === true)[0]?.name)
+  //   }
+  // }, [categoriesOptions])
 
-  const updateTaskList = useCallback((index: number, elapsedTime: number, prevTime: number, isPlay = true) => {
+  const updateTaskList = useCallback((index: number, elapsedTime: number, prevTime: number, isPlay = true, taskCategory: string = '') => {
     const time = updateTime(elapsedTime)
     const hours = TruncateTime(time.hours)
     const minutes = TruncateTime(time.minutes)
@@ -71,7 +71,7 @@ function App() {
     } : task)
     setTaskList(taskList)
     addTaskList(taskList)
-  },[])
+  }, [])
 
   useEffect(() => {
     const storageTaskTimerData = getTaskTimerData()
@@ -99,8 +99,6 @@ function App() {
           const animate = () => {
             const now = new Date().getTime()
             const distance = countDownTime - now
-
-            console.log("distance: ", distance)
   
             if(distance < 0) {
               taskTimerData = {
@@ -133,7 +131,7 @@ function App() {
 
               elapsedTime += now - prevTime
               prevTime = new Date().getTime()
-              updateTaskList(startStopWatch?.taskIndex!, elapsedTime, prevTime)
+              updateTaskList(startStopWatch?.taskIndex!, elapsedTime, prevTime, true, taskListData.taskCategory)
   
               taskTimerData = {
                 hours: intervalHours,
@@ -276,18 +274,25 @@ function App() {
 
   const handleOnChangeCategories = (e: ChangeEvent<HTMLSelectElement>) => {
     setCategoriesSelected(e.target.value)
-    setCategoriesOptions(categoriesOptions.map(option => option.name === e.target.value ? {...option, isSelected: true} : {...option, isSelected: false}))
+    
+    const newCategoryOptions = categoriesOptions.map(option => option.name === e.target.value ? {...option, isSelected: true} : {...option, isSelected: false})
+    setCategoriesOptions(newCategoryOptions)
+    setTaskCategories(newCategoryOptions)
   }
 
   const onSubmitCategories = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     if(refCategoriesInput.current?.value!) {
-      setCategoriesOptions(categoriesOptions.map(each => ({...each, isSelected: false})))
-      setCategoriesOptions([{
+      let newCategoryOptions = categoriesOptions.map(each => ({...each, isSelected: false}))
+
+      newCategoryOptions = [...newCategoryOptions, {
         name: refCategoriesInput.current?.value!,
-        isSelected: true
-      }, ...categoriesOptions])
+        isSelected: true,
+        totalHours: 0
+      }]
+      setCategoriesOptions(newCategoryOptions)
+      setTaskCategories(newCategoryOptions)
       setCategoriesSelected(refCategoriesInput.current?.value!)
       refCategoriesInput.current.value = ''
     }
@@ -308,8 +313,10 @@ function App() {
   }
 
   const handleAddTaskCategoryChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    const newCategoryOptions = categoriesOptions.map(each => each.name === e.target.value ? {...each, isSelected: true} : {...each, isSelected: false})
     setCategoriesSelected(e.target.value)
-    setCategoriesOptions(categoriesOptions.map(each => each.name === e.target.value ? {...each, isSelected: true} : {...each, isSelected: false}))
+    setCategoriesOptions(newCategoryOptions)
+    setTaskCategories(newCategoryOptions)
   }
 
   const handleAddTaskSubmit = (e: FormEvent) => {
@@ -391,6 +398,26 @@ function App() {
   }
 
   const handleShowTotalHours = () => {
+    if(!showTotalHours) {
+      let allCategoriesTotalHours = 0
+      const newCategoryOptions = categoriesOptions.map((category, categoryIndex) => {
+        let totalHours = 0
+        taskList.forEach(task => {
+          if(task.taskCategory === category.name) {
+            totalHours += parseFloat(task.hoursEquivalent)
+          }
+
+          if(categoryIndex === 0) {
+            allCategoriesTotalHours += parseFloat(task.hoursEquivalent)
+          }
+        })
+
+        return {...category, totalHours}
+      })
+      setCategoriesOptions(newCategoryOptions)
+      setTaskCategories(newCategoryOptions)
+      setSumUpAllCategories(Math.round((allCategoriesTotalHours + Number.EPSILON) * 100) / 100)
+    }
     setShowTotalHours(!showTotalHours)
   }
 
@@ -522,10 +549,23 @@ function App() {
             <>
               <h1>Total Hours:</h1>
               <div className="task-total-hours-container">
-                <div className="task-total-categories">
-                  <span className="task-total-category-name">Category 1<span>:</span> </span>
-                  <span className="task-total-number">3.33h</span>
-                </div>
+                {
+                  categoriesOptions.length > 0 ?
+                    categoriesOptions.map((category, index) =>
+                      <div className="task-total-categories" key={index}>
+                        <span className="task-total-category-name">{category.name}<span>:</span> </span>
+                        <span className="task-total-number">{category.totalHours.toFixed(2)}h</span>
+                      </div>
+                    )
+                  : 'N/A'
+                }
+                {
+                  categoriesOptions.length > 0 &&
+                  <div className="task-total-categories">
+                    <span className="task-total-category-name">Total<span>:</span> </span>
+                    <span className="task-total-number">{sumUpAllCategories}h</span>
+                  </div>
+                }
               </div>
             </>
           }

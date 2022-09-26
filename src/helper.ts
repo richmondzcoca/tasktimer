@@ -26,7 +26,7 @@ export const getTaskCategories = () => {
     return jsonData
 }
 
-export const addTaskCategories = (data: TaskCategories[]) => {
+export const setTaskCategories = (data: TaskCategories[]) => {
     localStorage.setItem('taskTimerCategories', JSON.stringify(data))
 }
 

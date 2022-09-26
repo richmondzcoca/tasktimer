@@ -283,10 +283,11 @@
     .task-total {
       &-hours {
         width: 95%;
-        margin-top: 20px;
+        margin-top: 10px;
         font-size: 14px;
         display: flex;
         flex-direction: column;
+        align-items: flex-end;
 
         h1 {
           font-size: 18px;
@@ -294,6 +295,9 @@
 
         &-container {
           display: flex;
+          flex-direction: column;
+          gap: 5px;
+          width: 200px;
         }
         .caret {
           transform: rotate(0deg);
@@ -324,9 +328,17 @@
       }
 
       &-categories {
-        width: 130px;
         display: flex;
         justify-content: space-between;
+        gap: 20px;
+      }
+
+      &-category-name {
+        word-break: break-word;
+      }
+
+      &-number {
+        align-self: center;
       }
     }
   }
