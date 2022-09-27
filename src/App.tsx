@@ -508,7 +508,7 @@ function App() {
                     <input disabled={startStopWatch?.isPlay} value={task.name} onChange={e => handleTaskListChange(e, index, 'name')} className="task-name" type="text" />
                     {
                       categoriesOptions.length > 0 &&
-                      <select disabled={startStopWatch?.isPlay} value={task.taskCategory} onChange={e => handleTaskListChange(e, index, 'taskCategory')} name="" id="">
+                      <select disabled={startStopWatch?.isPlay} value={task.taskCategory} onChange={e => handleTaskListChange(e, index, 'taskCategory')}>
                         {
                           task.taskCategory === '' &&
                           <option>Select Category</option>
