@@ -46,11 +46,11 @@ function App() {
     }
   }, [])
 
-  // useEffect(() => {
-  //   if(categoriesOptions.length) {
-  //     setCategoriesSelected(categoriesOptions.filter(option => option.isSelected === true)[0]?.name)
-  //   }
-  // }, [categoriesOptions])
+  useEffect(() => {
+    if(categoriesOptions.length) {
+      setCategoriesSelected(categoriesOptions.filter(option => option.isSelected === true)[0]?.name)
+    }
+  }, [categoriesOptions])
 
   const updateTaskList = useCallback((index: number, elapsedTime: number, prevTime: number, isPlay = true, taskCategory: string = '') => {
     const time = updateTime(elapsedTime)
