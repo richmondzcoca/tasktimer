@@ -159,7 +159,7 @@
         background-color: white;
 
         select {
-          width: 100px;
+          width: 200px;
           border: none;
           text-align: right;
         }
@@ -330,7 +330,7 @@
       &-categories {
         display: flex;
         justify-content: space-between;
-        gap: 20px;
+        gap: 100px;
       }
 
       &-category-name {
