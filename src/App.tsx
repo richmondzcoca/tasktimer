@@ -107,7 +107,8 @@ function App() {
                 minutes: '00',
                 seconds: '00',
                 distance: 0,
-                countDownTime: 0
+                countDownTime: 0,
+                showTotalHours: storageTaskTimerData.showTotalHours
               }
 
               elapsedTime += now - prevTime
@@ -139,7 +140,8 @@ function App() {
                 seconds: intervalSeconds,
                 isPause: false,
                 distance,
-                countDownTime: new Date(new Date().getTime() + distance).getTime()
+                countDownTime: new Date(new Date().getTime() + distance).getTime(),
+                showTotalHours: storageTaskTimerData.showTotalHours
               }
   
               setHours(intervalHours)
@@ -190,6 +192,8 @@ function App() {
       setMinutes(TruncateTime(diffMinutes))
       setSeconds(TruncateTime(diffSeconds))
     }
+
+    setShowTotalHours(storageTaskTimerData.showTotalHours)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startStopWatch, updateTaskList])
 
@@ -391,6 +395,7 @@ function App() {
         isPause: true,
         countDownTime: 0,
         distance: 0,
+        showTotalHours: false
       })
       setTaskList([])
       addTaskList([])
@@ -419,6 +424,10 @@ function App() {
       setSumUpAllCategories(Math.round((allCategoriesTotalHours + Number.EPSILON) * 100) / 100)
     }
     setShowTotalHours(!showTotalHours)
+    setTaskTimerData({
+      ...getTaskTimerData(),
+      showTotalHours: !showTotalHours
+    })
   }
 
   return (
