@@ -1,6 +1,6 @@
 import React, { ChangeEvent, FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
 import './App.scss';
-import { setTaskCategories, addTaskList, getTaskCategories, getTaskList, getTaskTimerData, GetTime, setTaskTimerData, TruncateTime } from './helper';
+import { setTaskCategories, addTaskList, getTaskCategories, getTaskList, getTaskTimerData, GetTime, setTaskTimerData, TruncateTime, setShowTotalHoursData, getShowTotalHoursData } from './helper';
 import { StartStopWatchInterface, TaskCategories, TaskListInterface, TaskTimer } from './interfaces';
 
 function App() {
@@ -22,10 +22,12 @@ function App() {
   const [startStopWatch, setStartStopWatch] = useState<StartStopWatchInterface>()
   const [showTotalHours, setShowTotalHours] = useState(false)
   const [sumUpAllCategories, setSumUpAllCategories] = useState(0)
+  const [runOnce, setRunOnce] = useState(Boolean)
 
   const refTimeInterval: any = useRef()
   const refCategoriesInput = useRef<HTMLInputElement>(null)
   const refSelectCategories = useRef<HTMLSelectElement>(null)
+  const refShowTotalHoursButton = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     let index: null | number = null
@@ -44,13 +46,17 @@ function App() {
     return () => {
       cancelAnimationFrame(refTimeInterval.current)
     }
-  }, [])
+  }, []) 
 
   useEffect(() => {
     if(categoriesOptions.length) {
       setCategoriesSelected(categoriesOptions.filter(option => option.isSelected === true)[0]?.name)
+
+      if(!runOnce && getShowTotalHoursData()) {
+        refShowTotalHoursButton.current?.click()
+      }
     }
-  }, [categoriesOptions])
+  }, [categoriesOptions, runOnce])
 
   const updateTaskList = useCallback((index: number, elapsedTime: number, prevTime: number, isPlay = true, taskCategory: string = '') => {
     const time = updateTime(elapsedTime)
@@ -107,8 +113,7 @@ function App() {
                 minutes: '00',
                 seconds: '00',
                 distance: 0,
-                countDownTime: 0,
-                showTotalHours: storageTaskTimerData.showTotalHours
+                countDownTime: 0
               }
 
               elapsedTime += now - prevTime
@@ -140,8 +145,7 @@ function App() {
                 seconds: intervalSeconds,
                 isPause: false,
                 distance,
-                countDownTime: new Date(new Date().getTime() + distance).getTime(),
-                showTotalHours: storageTaskTimerData.showTotalHours
+                countDownTime: new Date(new Date().getTime() + distance).getTime()
               }
   
               setHours(intervalHours)
@@ -192,8 +196,6 @@ function App() {
       setMinutes(TruncateTime(diffMinutes))
       setSeconds(TruncateTime(diffSeconds))
     }
-
-    setShowTotalHours(storageTaskTimerData.showTotalHours)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startStopWatch, updateTaskList])
 
@@ -394,8 +396,7 @@ function App() {
         seconds: '00',
         isPause: true,
         countDownTime: 0,
-        distance: 0,
-        showTotalHours: false
+        distance: 0
       })
       setTaskList([])
       addTaskList([])
@@ -424,10 +425,8 @@ function App() {
       setSumUpAllCategories(Math.round((allCategoriesTotalHours + Number.EPSILON) * 100) / 100)
     }
     setShowTotalHours(!showTotalHours)
-    setTaskTimerData({
-      ...getTaskTimerData(),
-      showTotalHours: !showTotalHours
-    })
+    setShowTotalHoursData(!showTotalHours)
+    setRunOnce(true)
   }
 
   return (
@@ -550,7 +549,7 @@ function App() {
           }
         </div>
         <div className="task-total-hours">
-          <button onClick={handleShowTotalHours} className={`caret${showTotalHours ? ' show' : ''}`}>
+          <button ref={refShowTotalHoursButton} onClick={handleShowTotalHours} className={`caret${showTotalHours ? ' show' : ''}`}>
             <span>▲</span>
           </button>
           {
@@ -561,6 +560,7 @@ function App() {
                 {
                   categoriesOptions.length > 0 ?
                     categoriesOptions.map((category, index) =>
+                      category.totalHours > 0 &&
                       <div className="task-total-categories" key={index}>
                         <span className="task-total-category-name">{category.name}<span>:</span> </span>
                         <span className="task-total-number">{category.totalHours.toFixed(2)}h</span>

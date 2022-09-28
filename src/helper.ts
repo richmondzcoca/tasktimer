@@ -1,4 +1,5 @@
 import { TaskCategories, TaskListInterface, TaskTimer } from "./interfaces"
+import { ShowTotalHoursType } from "./types"
 
 export const GetTime = (hours: number = 0, minutes: number = 0, seconds: number = 0, milliseconds: number = 0) => {
     const currentTime = new Date().getTime()
@@ -36,4 +37,12 @@ export const getTaskList = () => {
 
 export const addTaskList = (data: TaskListInterface[]) => {
     localStorage.setItem('taskListData', JSON.stringify(data))
+}
+
+export const getShowTotalHoursData = () => {
+    return localStorage.getItem('taskShowTotalHours') === 'true' ? true : false
+}
+
+export const setShowTotalHoursData = (data: ShowTotalHoursType) => {
+    localStorage.setItem('taskShowTotalHours', JSON.stringify(data))
 }
