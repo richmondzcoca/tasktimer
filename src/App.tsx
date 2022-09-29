@@ -400,6 +400,8 @@ function App() {
       })
       setTaskList([])
       addTaskList([])
+      setShowTotalHours(!showTotalHours)
+      setShowTotalHoursData(!showTotalHours)
     }
   }
 
